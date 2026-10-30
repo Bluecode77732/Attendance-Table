@@ -1,0 +1,8 @@
+# 학생 이름·출석·폰 등록이 든 실행 중 데이터 — 저장소에 올리지 않는다
+data.json
+data.json.tmp
+data.json.broken-*
+
+# 배포 zip과, zip에 함께 넣는 휴대용 Node
+node/
+*.zip
