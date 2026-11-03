@@ -7,3 +7,6 @@ backup/
 # 배포 zip과, zip에 함께 넣는 휴대용 Node
 node/
 *.zip
+
+# 개발 전용 타입 검사 도구(pnpm). 학원 zip에도 넣지 않습니다
+node_modules/

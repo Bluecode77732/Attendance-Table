@@ -1,0 +1,17 @@
+{
+  "name": "attendance-table",
+  "private": true,
+  "description": "개발 전용입니다. 타입 검사 도구와 시험 명령만 담고, 학원 zip에는 넣지 않습니다(DEC-15).",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "node --test \"tests/*.test.js\""
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  }
+}

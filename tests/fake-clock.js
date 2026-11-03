@@ -1,5 +1,5 @@
 // 목적: 시험할 때 서버의 시계를 원하는 시각으로 옮깁니다.
-// 사용처: tests/helpers.js가 서버를 띄울 때 `node --require tests/fake-clock.js server.js`로 미리 부릅니다. 실제 실행에는 쓰지 않습니다.
+// 사용처: tests/helpers.js가 서버를 띄울 때 `node --require tests/fake-clock.js server.ts`로 미리 부릅니다. 실제 실행에는 쓰지 않습니다.
 // 근거: 10분 반복 구간과 자정 날짜 넘김은 실제 시계로는 기다려야만 시험할 수 있어서, 시각을 정해 두고 시험하려고 넣었습니다.
 
 'use strict';

@@ -55,13 +55,13 @@ async function setClock(clockFile, dayOffset, hh, mm) {
 
 // 목적: 격리된 출석 서버를 띄우고, 켜질 때까지 기다립니다.
 // 이유: 모든 시험이 같은 방식으로 서버를 띄워야 실제 데이터와 포트를 건드리지 않습니다.
-// 방법: 빈 포트, 임시 data.json, NO_OPEN=1로 server.js를 띄웁니다. clockFile을 주면 fake-clock.js를 먼저 부릅니다. "켜졌어요"가 출력되면 준비된 것입니다.
+// 방법: 빈 포트, 임시 data.json, NO_OPEN=1로 server.ts를 띄웁니다. clockFile을 주면 fake-clock.js를 먼저 부릅니다. "켜졌어요"가 출력되면 준비된 것입니다.
 async function startServer({ dataFile, clockFile } = {}) {
   const dir = dataFile ? path.dirname(dataFile) : makeTempDir();
   const file = dataFile ?? path.join(dir, 'data.json');
   const port = await freePort();
   const args = clockFile ? ['--require', path.join(__dirname, 'fake-clock.js')] : [];
-  args.push(path.join(ROOT, 'server.js'));
+  args.push(path.join(ROOT, 'server.ts'));
   const child = spawn(process.execPath, args, {
     env: { ...process.env, PORT: String(port), NO_OPEN: '1', DATA_FILE: file, HOST_IP: '', FAKE_CLOCK_FILE: clockFile ?? '' },
     stdio: ['ignore', 'pipe', 'pipe'],
