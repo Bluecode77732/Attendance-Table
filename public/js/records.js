@@ -1,6 +1,6 @@
-// 목적: 한 달 기록 화면의 동작이에요. 표 그리기, 칸 수정, 인쇄를 맡아요.
-// 사용처: public/records.html이 common.js 다음에 불러요.
-// 근거: HTML 안 스크립트를 막는 보안 정책(CSP)을 켜려고 records.html에서 옮겼어요(DEC-14).
+// 목적: 한 달 기록 화면의 동작입니다. 표 그리기, 칸 수정, 인쇄를 맡습니다.
+// 사용처: public/records.html이 common.js 다음에 부릅니다.
+// 근거: HTML 안 스크립트를 막는 보안 정책(CSP)을 켜려고 records.html에서 옮겼습니다(DEC-14).
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const MAX_VISITS = 10;
@@ -21,9 +21,9 @@ let classFilter = 'all';
 let editing = null;
 let toastTimer = null;
 
-// 목적: 화면 아래에 짧은 안내를 띄워요.
-// 이유: 불러오기 실패나 저장 결과를 바로 알아야 해요.
-// 방법: 4초 뒤 자동으로 숨겨요.
+// 목적: 화면 아래에 짧은 안내를 띄웁니다.
+// 이유: 불러오기 실패나 저장 결과를 바로 알아야 합니다.
+// 방법: 4초 뒤 자동으로 숨깁니다.
 function showToast(text) {
   clearTimeout(toastTimer);
   toastEl.textContent = text;
@@ -31,17 +31,17 @@ function showToast(text) {
   toastTimer = setTimeout(() => { toastEl.hidden = true; }, 4000);
 }
 
-// 목적: 이번 달을 YYYY-MM으로 만들어요.
-// 이유: 처음 열면 이번 달 기록을 보여 줘요.
-// 방법: PC 현지 날짜로 조립해요.
+// 목적: 이번 달을 YYYY-MM으로 만듭니다.
+// 이유: 처음 열면 이번 달 기록을 보여 줍니다.
+// 방법: PC 현지 날짜로 조립합니다.
 function currentMonth() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// 목적: 보고 있는 달을 앞뒤로 옮겨요.
-// 이유: 지난달 기록으로 상담하는 일이 많아요.
-// 방법: 연·월을 계산해 month를 바꾸고 다시 불러와요.
+// 목적: 보고 있는 달을 앞뒤로 옮깁니다.
+// 이유: 지난달 기록으로 상담하는 일이 많습니다.
+// 방법: 연·월을 계산해 month를 바꾸고 다시 불러옵니다.
 function shiftMonth(delta) {
   const [y, m] = month.split('-').map(Number);
   const d = new Date(y, m - 1 + delta, 1);
@@ -49,9 +49,9 @@ function shiftMonth(delta) {
   load();
 }
 
-// 목적: 한 달치 기록을 서버에서 받아 표를 그려요.
-// 이유: 다른 달로 옮기거나 시각을 고친 뒤 최신 기록을 보여 줘야 해요.
-// 방법: /api/records?month= 를 불러 data에 두고 반 선택과 표를 다시 그려요.
+// 목적: 한 달치 기록을 서버에서 받아 표를 그립니다.
+// 이유: 다른 달로 옮기거나 시각을 고친 뒤 최신 기록을 보여 줘야 합니다.
+// 방법: /api/records?month= 를 불러 data에 두고 반 선택과 표를 다시 그립니다.
 async function load() {
   const [y, m] = month.split('-').map(Number);
   monthLabel.textContent = `${y}년 ${m}월`;
@@ -65,9 +65,9 @@ async function load() {
   render();
 }
 
-// 목적: 반 선택 목록을 서버의 반 목록에 맞춰요.
-// 이유: 상담할 때 반별로 걸러 보기도 해요.
-// 방법: option을 다시 만들고, 고른 반이 사라졌으면 "전체"로 돌아가요.
+// 목적: 반 선택 목록을 서버의 반 목록에 맞춥니다.
+// 이유: 상담할 때 반별로 걸러 보기도 합니다.
+// 방법: option을 다시 만들고, 고른 반이 사라졌으면 "전체"로 돌아갑니다.
 function updateClassFilter() {
   if (classFilter !== 'all' && !data.classes.some((c) => c.id === classFilter)) classFilter = 'all';
   classFilterEl.replaceChildren(new Option('전체', 'all'));
@@ -75,18 +75,18 @@ function updateClassFilter() {
   classFilterEl.value = String(classFilter);
 }
 
-// 목적: 표에 넣을 학생을 골라요.
-// 이유: 재원생은 기록이 없어도 보여야 결석이 보이고, 퇴원생은 그 달 기록이 있을 때만 보여요.
-// 방법: 반 선택에 맞는 학생 중 퇴원하지 않았거나 그 달 기록이 있는 학생만 남겨요.
+// 목적: 표에 넣을 학생을 고릅니다.
+// 이유: 재원생은 기록이 없어도 보여야 결석이 보이고, 퇴원생은 그 달 기록이 있을 때만 보입니다.
+// 방법: 반 선택에 맞는 학생 중 퇴원하지 않았거나 그 달 기록이 있는 학생만 남깁니다.
 function rowsToShow() {
   const hasRecord = (id) => Object.values(data.days).some((day) => day[id]);
   return data.students.filter((s) => (classFilter === 'all' || s.classIds.includes(classFilter))
     && (s.leftOn === null || hasRecord(s.id)));
 }
 
-// 목적: 학생 × 날짜 표를 그려요.
-// 이유: 한 달 출석을 한눈에 보고 인쇄해야 해요.
-// 방법: 날짜 칸마다 방문을 "등원–하원" 줄로 넣고, 주말과 오늘은 색을 달리해요. 끝에 출석 일수를 붙여요. 이름은 textContent로 넣어요.
+// 목적: 학생 × 날짜 표를 그립니다.
+// 이유: 한 달 출석을 한눈에 보고 인쇄해야 합니다.
+// 방법: 날짜 칸마다 방문을 "등원–하원" 줄로 넣고, 주말과 오늘은 색을 달리합니다. 끝에 출석 일수를 붙입니다. 이름은 textContent로 넣습니다.
 function render() {
   const [y, m] = month.split('-').map(Number);
   const lastDay = new Date(y, m, 0).getDate();
@@ -148,7 +148,7 @@ function render() {
       if (weekday === 0 || weekday === 6) td.classList.add('weekend');
       if (date === todayKey) td.classList.add('today');
       for (const v of visits) {
-        // 인쇄할 때 31일이 A4 가로에 들어가도록 하원 시각은 줄을 바꿀 수 있게 둔다.
+        // 인쇄할 때 31일이 A4 가로에 들어가도록 하원 시각은 줄을 바꿀 수 있게 둡니다.
         const line = document.createElement('span');
         line.className = 'visit';
         line.append(`${v.in}–`, document.createElement('wbr'), v.out ?? '');
@@ -164,9 +164,9 @@ function render() {
   wrap.replaceChildren(table);
 }
 
-// 목적: 날짜 칸을 누르면 그날 기록을 고치는 창을 열어요.
-// 이유: 하원을 깜빡한 날 같은 실수를 교사가 고쳐야 상담 기록이 맞아요.
-// 방법: 그 학생·날짜의 방문을 복사해 시각 입력 줄로 만들어요. 기록이 없으면 빈 줄 하나로 시작해요.
+// 목적: 날짜 칸을 누르면 그날 기록을 고치는 창을 엽니다.
+// 이유: 하원을 깜빡한 날 같은 실수를 교사가 고쳐야 상담 기록이 맞습니다.
+// 방법: 그 학생·날짜의 방문을 복사해 시각 입력 줄로 만듭니다. 기록이 없으면 빈 줄 하나로 시작합니다.
 function openEdit(date, id) {
   const student = data.students.find((s) => s.id === id);
   if (!student) return;
@@ -181,9 +181,9 @@ function openEdit(date, id) {
   editDialog.showModal();
 }
 
-// 목적: 고치는 창에 방문 한 줄(등원, 하원, 삭제)을 더해요.
-// 이유: 하루에 두 번 온 학생도 있어요.
-// 방법: time 입력 두 개와 삭제 버튼을 만들어요. 10줄을 넘기지 않아요.
+// 목적: 고치는 창에 방문 한 줄(등원, 하원, 삭제)을 더합니다.
+// 이유: 하루에 두 번 온 학생도 있습니다.
+// 방법: time 입력 두 개와 삭제 버튼을 만듭니다. 10줄을 넘기지 않습니다.
 function addVisitRow(inTime, outTime) {
   if (visitRows.children.length >= MAX_VISITS) return;
   const row = document.createElement('div');
@@ -211,9 +211,9 @@ function addVisitRow(inTime, outTime) {
   visitRows.append(row);
 }
 
-// 목적: 고친 하루치 기록을 저장해요.
-// 이유: 저장하면 바로 표에 반영돼야 해요. 모든 줄을 지우고 저장하면 그날 기록이 지워져요.
-// 방법: 등원 시각이 빈 줄은 빼고 /api/records/edit으로 보내요. 서버가 순서와 형식을 확인하고, 틀리면 그 사유를 창에 보여 줘요.
+// 목적: 고친 하루치 기록을 저장합니다.
+// 이유: 저장하면 바로 표에 반영돼야 합니다. 모든 줄을 지우고 저장하면 그날 기록이 지워집니다.
+// 방법: 등원 시각이 빈 줄은 빼고 /api/records/edit으로 보냅니다. 서버가 순서와 형식을 확인하고, 틀리면 그 사유를 창에 보여 줍니다.
 async function saveEdit() {
   const visits = [...visitRows.children]
     .map((row) => ({ in: row.querySelector('[data-role="in"]').value, out: row.querySelector('[data-role="out"]').value || null }))

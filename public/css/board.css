@@ -1,6 +1,6 @@
-/* 목적: 교사용 TV 현황판의 모양이에요. */
-/* 사용처: public/index.html이 <link>로 불러요. */
-/* 근거: HTML 안 스타일을 막는 보안 정책(CSP)을 켜려고 index.html에서 옮겼어요(DEC-14). */
+/* 목적: 교사용 TV 현황판의 모양입니다. */
+/* 사용처: public/index.html이 <link>로 부릅니다. */
+/* 근거: HTML 안 스타일을 막는 보안 정책(CSP)을 켜려고 index.html에서 옮겼습니다(DEC-14). */
 
 :root {
   --in: #178a48;
@@ -15,7 +15,7 @@
 
 html, body { height: 100%; margin: 0; }
 
-/* TV는 멀리서 보니 rem 기준 글자·여백이 화면 폭에 비례해 커지게 한다 */
+/* TV는 멀리서 보니 rem 기준 글자·여백이 화면 폭에 비례해 커지게 합니다 */
 html { font-size: clamp(16px, 1.3vw, 48px); }
 
 body {
@@ -123,7 +123,7 @@ body {
   overflow-wrap: anywhere;
 }
 
-/* 색만으로 구분하지 않도록 상태를 글자로도 적는다 */
+/* 색만으로 구분하지 않도록 상태를 글자로도 적습니다 */
 .status {
   padding: 0.15em 0.8em;
   border: 2px solid rgba(255, 255, 255, 0.75);
@@ -134,7 +134,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* 번호가 없으면 출석 기기로 출석할 수 없다 — 교사가 빠진 학생을 한눈에 본다 */
+/* 번호가 없으면 출석 기기로 출석할 수 없다 — 교사가 빠진 학생을 한눈에 봅니다 */
 .badge {
   position: absolute;
   top: 0.6rem;
@@ -267,7 +267,7 @@ dialog::backdrop { background: rgba(20, 20, 20, 0.75); }
 .grid.slide-next { animation: from-right 0.28s ease-out; }
 .grid.slide-prev { animation: from-left 0.28s ease-out; }
 
-/* 마우스가 없는 기기는 hover가 없으니 버튼을 늘 보이게 한다 */
+/* 마우스가 없는 기기는 hover가 없으니 버튼을 늘 보이게 합니다 */
 @media (hover: none) {
   .actions { opacity: 1; pointer-events: auto; }
   .cell.add .toggle { opacity: 0.7; }

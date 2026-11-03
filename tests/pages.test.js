@@ -1,6 +1,6 @@
-// 목적: 세 화면(현황판, 출석 기기, 기록)이 실제 브라우저에서 동작하는지 고정해 두는 시험이에요.
-// 사용처: `node --test "tests/*.test.js"`로 실행해요. Chrome이나 Edge가 없는 PC에서는 건너뛰어요. 가짜 이름만 써요.
-// 근거: 화면 스크립트를 파일로 나눌 때 붙여넣기 해석, 기기 등록, 출석 결과 화면이 그대로인지 확인해야 해요. 일회용으로 쓰던 시험을 옮겨 왔어요.
+// 목적: 세 화면(현황판, 출석 기기, 기록)이 실제 브라우저에서 동작하는지 고정해 두는 시험입니다.
+// 사용처: `node --test "tests/*.test.js"`로 실행합니다. Chrome이나 Edge가 없는 PC에서는 건너뜁니다. 가짜 이름만 씁니다.
+// 근거: 화면 스크립트를 파일로 나눌 때 붙여넣기 해석, 기기 등록, 출석 결과 화면이 그대로인지 확인해야 합니다. 일회용으로 쓰던 시험을 옮겨 왔습니다.
 
 'use strict';
 
@@ -21,16 +21,16 @@ const BROWSERS = [
 ].filter(Boolean);
 const BROWSER = BROWSERS.find((p) => fs.existsSync(p));
 
-// 목적: 잠깐 기다려요.
-// 이유: 화면은 요청을 보내고 결과를 그리는 데 시간이 걸려요.
-// 방법: setTimeout을 Promise로 감싸요.
+// 목적: 잠깐 기다립니다.
+// 이유: 화면은 요청을 보내고 결과를 그리는 데 시간이 걸립니다.
+// 방법: setTimeout을 Promise로 감쌉니다.
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// 목적: 비어 있는 포트를 하나 얻어요.
-// 이유: 브라우저 원격 제어(DevTools) 포트가 다른 프로그램과 겹치면 안 돼요.
-// 방법: 0번으로 잠깐 열어 받은 포트를 닫고 돌려줘요.
+// 목적: 비어 있는 포트를 하나 얻습니다.
+// 이유: 브라우저 원격 제어(DevTools) 포트가 다른 프로그램과 겹치면 안 됩니다.
+// 방법: 0번으로 잠깐 열어 받은 포트를 닫고 돌려줍니다.
 function freePort() {
   return new Promise((resolve, reject) => {
     const probe = net.createServer();
@@ -42,9 +42,9 @@ function freePort() {
   });
 }
 
-// 목적: 헤드리스 브라우저를 띄우고 DevTools 포트가 열릴 때까지 기다려요.
-// 이유: npm 패키지 없이 화면을 시험하려고 브라우저를 직접 원격 제어해요(DEC-02).
-// 방법: 임시 프로필로 --headless=new를 띄우고 /json/version이 답할 때까지 확인해요.
+// 목적: 헤드리스 브라우저를 띄우고 DevTools 포트가 열릴 때까지 기다립니다.
+// 이유: npm 패키지 없이 화면을 시험하려고 브라우저를 직접 원격 제어합니다(DEC-02).
+// 방법: 임시 프로필로 --headless=new를 띄우고 /json/version이 답할 때까지 확인합니다.
 async function startBrowser(profileDir) {
   const port = await freePort();
   const child = spawn(BROWSER, [
@@ -63,9 +63,9 @@ async function startBrowser(profileDir) {
   throw new Error('브라우저가 켜지지 않았어요');
 }
 
-// 목적: 새 탭을 열어 주소로 이동하고, 그 탭에서 스크립트를 실행하는 도구를 돌려줘요.
-// 이유: 시험이 화면 안의 버튼을 누르고 글자를 읽어야 해요.
-// 방법: DevTools 프로토콜로 탭을 만들고 WebSocket으로 명령을 보내요. 페이지 예외는 errors에 모으고, confirm 창은 자동으로 확인해요.
+// 목적: 새 탭을 열어 주소로 이동하고, 그 탭에서 스크립트를 실행하는 도구를 돌려줍니다.
+// 이유: 시험이 화면 안의 버튼을 누르고 글자를 읽어야 합니다.
+// 방법: DevTools 프로토콜로 탭을 만들고 WebSocket으로 명령을 보냅니다. 페이지 예외는 errors에 모으고, confirm 창은 자동으로 확인합니다.
 async function openTab(cdpPort, url, { width, height, mobile }, errors) {
   const target = await (await fetch(`http://127.0.0.1:${cdpPort}/json/new?about:blank`, { method: 'PUT' })).json();
   const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -84,7 +84,7 @@ async function openTab(cdpPort, url, { width, height, mobile }, errors) {
       pending.delete(msg.id);
     }
     if (msg.method === 'Runtime.exceptionThrown') errors.push(`${url}: ${msg.params.exceptionDetails.exception?.description}`);
-    // CSP가 막은 스크립트·스타일은 예외가 아니라 콘솔 오류로만 나온다. 네트워크 오류(favicon 404, 일부러 낸 400)는 뺀다.
+    // CSP가 막은 스크립트·스타일은 예외가 아니라 콘솔 오류로만 나옵니다. 네트워크 오류(favicon 404, 일부러 낸 400)는 뺍니다.
     if (msg.method === 'Log.entryAdded' && msg.params.entry.level === 'error' && msg.params.entry.source !== 'network') {
       errors.push(`${url}: ${msg.params.entry.text}`);
     }
@@ -137,13 +137,13 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     try {
       removeDir(profileDir);
     } catch {
-      // 브라우저가 프로필 파일을 늦게 놓을 때가 있다. 임시 폴더라 남아도 해가 없다.
+      // 브라우저가 프로필 파일을 늦게 놓을 때가 있습니다. 임시 폴더라 남아도 해가 없습니다.
     }
   });
 
-  // 목적: 현황판의 붙여넣기 창에 글자를 넣고 미리보기 결과를 읽어요.
-  // 이유: 붙여넣기 시험 여러 개가 같은 순서를 써요.
-  // 방법: 창을 열고 입력칸에 값을 넣은 뒤 input 이벤트와 미리보기 버튼을 눌러요.
+  // 목적: 현황판의 붙여넣기 창에 글자를 넣고 미리보기 결과를 읽습니다.
+  // 이유: 붙여넣기 시험 여러 개가 같은 순서를 씁니다.
+  // 방법: 창을 열고 입력칸에 값을 넣은 뒤 input 이벤트와 미리보기 버튼을 누릅니다.
   const paste = async (text) => {
     await board.evaluate(`document.getElementById('open-paste').click(); document.getElementById('paste-box').value = ${JSON.stringify(text)}; document.getElementById('paste-box').dispatchEvent(new Event('input')); document.getElementById('paste-check').click()`);
     await wait(600);
@@ -208,11 +208,11 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
   });
 
   it('출석 기기에서 출석하면 결과를 보여 주고 현황판에 나타나요', async () => {
-    // 목적: 출석 기기 화면에서 숫자 키를 차례로 눌러요.
-    // 이유: 학생이 키패드를 누르는 것과 같은 경로로 시험해요.
-    // 방법: 숫자마다 data-key가 같은 버튼을 클릭해요.
+    // 목적: 출석 기기 화면에서 숫자 키를 차례로 누릅니다.
+    // 이유: 학생이 키패드를 누르는 것과 같은 경로로 시험합니다.
+    // 방법: 숫자마다 data-key가 같은 버튼을 클릭합니다.
     const press = (digits) => kiosk.evaluate(`'${digits}'.split('').forEach((d) => document.querySelector('.key[data-key="' + d + '"]').click())`);
-    // 사아자는 앞 시험에서 현황판으로 등원시켰으니 10분 반복에 걸린다. 아직 오지 않은 차카타로 시험한다.
+    // 사아자는 앞 시험에서 현황판으로 등원시켰으니 10분 반복에 걸립니다. 아직 오지 않은 차카타로 시험합니다.
     await press('8888');
     await wait(600);
     assert.equal(await kiosk.evaluate(`document.getElementById('result-big').textContent`), '차카타님 등원했어요');

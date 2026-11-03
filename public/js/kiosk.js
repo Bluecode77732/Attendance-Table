@@ -1,6 +1,6 @@
-// 목적: 출석 기기 화면의 동작이에요. 등록 코드, 키패드, 이름 고르기, 결과 화면을 맡아요.
-// 사용처: public/kiosk.html이 common.js 다음에 불러요.
-// 근거: HTML 안 스크립트를 막는 보안 정책(CSP)을 켜려고 kiosk.html에서 옮겼어요(DEC-14).
+// 목적: 출석 기기 화면의 동작입니다. 등록 코드, 키패드, 이름 고르기, 결과 화면을 맡습니다.
+// 사용처: public/kiosk.html이 common.js 다음에 부릅니다.
+// 근거: HTML 안 스크립트를 막는 보안 정책(CSP)을 켜려고 kiosk.html에서 옮겼습니다(DEC-14).
 
 const CODE_LENGTH = { pair: 6, digits: 4 };
 const RESULT_MS = 3500;
@@ -24,16 +24,16 @@ let pendingDigits = '';
 let resultTimer = null;
 let lastRequest = null;
 
-// 목적: 화면 하나만 보이게 해요.
-// 이유: 입력, 이름 고르기, 결과, 연결 끊김이 한 페이지 안의 다른 화면이에요.
-// 방법: 대상 화면만 hidden을 풀어요.
+// 목적: 화면 하나만 보이게 합니다.
+// 이유: 입력, 이름 고르기, 결과, 연결 끊김이 한 페이지 안의 다른 화면입니다.
+// 방법: 대상 화면만 hidden을 풉니다.
 function show(id) {
   for (const screen of screens) screen.hidden = screen.id !== id;
 }
 
-// 목적: 숫자 키패드를 만들어요.
-// 이유: 등록 코드 입력과 번호 입력이 같은 키패드를 써요.
-// 방법: 1~9, 지우기, 0, 처음부터 순서로 버튼을 만들고 data-key로 동작을 구분해요.
+// 목적: 숫자 키패드를 만듭니다.
+// 이유: 등록 코드 입력과 번호 입력이 같은 키패드를 씁니다.
+// 방법: 1~9, 지우기, 0, 처음부터 순서로 버튼을 만들고 data-key로 동작을 구분합니다.
 function buildKeypad() {
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'back', '0', 'clear'];
   for (const key of keys) {
@@ -54,9 +54,9 @@ function buildKeypad() {
   }
 }
 
-// 목적: 입력 화면을 등록 코드용이나 번호용으로 열어요.
-// 이유: 등록되지 않은 기기는 먼저 코드를 입력해야 하고, 등록된 기기는 번호를 받아요.
-// 방법: mode에 맞는 제목과 안내, 칸 수를 그리고 입력값을 비워요.
+// 목적: 입력 화면을 등록 코드용이나 번호용으로 엽니다.
+// 이유: 등록되지 않은 기기는 먼저 코드를 입력해야 하고, 등록된 기기는 번호를 받습니다.
+// 방법: mode에 맞는 제목과 안내, 칸 수를 그리고 입력값을 비웁니다.
 function openEntry(nextMode, message) {
   mode = nextMode;
   typed = '';
@@ -72,9 +72,9 @@ function openEntry(nextMode, message) {
   show('entry');
 }
 
-// 목적: 입력한 자리 수만큼 칸을 채워 보여 줘요.
-// 이유: 몇 자리를 눌렀는지 바로 보여야 해요. 번호는 옆 사람이 보지 않게 가려요.
-// 방법: 칸 수만큼 만들고, 번호는 ●, 등록 코드는 숫자 그대로 보여 줘요.
+// 목적: 입력한 자리 수만큼 칸을 채워 보여 줍니다.
+// 이유: 몇 자리를 눌렀는지 바로 보여야 합니다. 번호는 옆 사람이 보지 않게 가립니다.
+// 방법: 칸 수만큼 만들고, 번호는 ●, 등록 코드는 숫자 그대로 보여 줍니다.
 function drawDots() {
   dotsEl.replaceChildren();
   for (let i = 0; i < CODE_LENGTH[mode]; i++) {
@@ -88,9 +88,9 @@ function drawDots() {
   }
 }
 
-// 목적: 키패드 누름을 처리하고, 자리 수가 다 차면 바로 보내요.
-// 이유: 학생이 확인 버튼을 따로 누르지 않아도 되게 해요.
-// 방법: 보내는 중이면 무시해요. 숫자는 추가, 지우기는 한 자리 삭제, 처음부터는 전부 삭제해요.
+// 목적: 키패드 누름을 처리하고, 자리 수가 다 차면 바로 보냅니다.
+// 이유: 학생이 확인 버튼을 따로 누르지 않아도 되게 합니다.
+// 방법: 보내는 중이면 무시합니다. 숫자는 추가, 지우기는 한 자리 삭제, 처음부터는 전부 삭제합니다.
 function onKey(event) {
   const button = event.target.closest('.key');
   if (!button || busy) return;
@@ -106,9 +106,9 @@ function onKey(event) {
   }
 }
 
-// 목적: 서버 요청 하나를 보내고, 연결이 끊기면 연결 끊김 화면을 보여 줘요.
-// 이유: 교사 PC가 꺼지거나 Wi-Fi가 끊겨도 학생이 다음에 뭘 할지 알아야 해요.
-// 방법: busy로 겹쳐 보내기를 막아요. 실패하면 같은 요청을 "다시 시도"에서 그대로 보낼 수 있게 기억해요.
+// 목적: 서버 요청 하나를 보내고, 연결이 끊기면 연결 끊김 화면을 보여 줍니다.
+// 이유: 교사 PC가 꺼지거나 Wi-Fi가 끊겨도 학생이 다음에 뭘 할지 알아야 합니다.
+// 방법: busy로 겹쳐 보내기를 막습니다. 실패하면 같은 요청을 "다시 시도"에서 그대로 보낼 수 있게 기억합니다.
 async function send(request) {
   busy = true;
   lastRequest = request;
@@ -121,9 +121,9 @@ async function send(request) {
   }
 }
 
-// 목적: 처음 열 때 이 기기가 등록돼 있는지 확인해요.
-// 이유: 등록된 기기면 바로 번호를 받고, 아니면 등록 코드부터 받아야 해요.
-// 방법: hello를 보내 ready면 번호 입력, unpaired면 등록 코드 입력을 열어요.
+// 목적: 처음 열 때 이 기기가 등록돼 있는지 확인합니다.
+// 이유: 등록된 기기면 바로 번호를 받고, 아니면 등록 코드부터 받아야 합니다.
+// 방법: hello를 보내 ready면 번호 입력, unpaired면 등록 코드 입력을 엽니다.
 function hello() {
   send(async () => {
     const data = await api('/api/kiosk/hello', {});
@@ -132,9 +132,9 @@ function hello() {
   });
 }
 
-// 목적: 등록 코드를 보내 이 기기를 출석 기기로 등록해요.
-// 이유: 코드를 본 사람만 출석 기기를 등록할 수 있어요.
-// 방법: 결과마다 안내를 바꿔요. paired면 번호 입력으로 넘어가요.
+// 목적: 등록 코드를 보내 이 기기를 출석 기기로 등록합니다.
+// 이유: 코드를 본 사람만 출석 기기를 등록할 수 있습니다.
+// 방법: 결과마다 안내를 바꿉니다. paired면 번호 입력으로 넘어갑니다.
 function pair(code) {
   send(async () => {
     const data = await api('/api/kiosk/pair', { code });
@@ -145,9 +145,9 @@ function pair(code) {
   });
 }
 
-// 목적: 번호 뒷 4자리(와 고른 학생)를 보내 출석을 기록해요.
-// 이유: 서버가 등원·하원·반복을 정하고, 화면은 그 결과만 보여 줘요.
-// 방법: 상태마다 결과 화면이나 이름 고르기를 보여 줘요. 기기 등록이 취소됐으면 등록 코드 입력으로 돌아가요.
+// 목적: 번호 뒷 4자리(와 고른 학생)를 보내 출석을 기록합니다.
+// 이유: 서버가 등원·하원·반복을 정하고, 화면은 그 결과만 보여 줍니다.
+// 방법: 상태마다 결과 화면이나 이름 고르기를 보여 줍니다. 기기 등록이 취소됐으면 등록 코드 입력으로 돌아갑니다.
 function checkin(digits, studentId) {
   send(async () => {
     const data = await api('/api/kiosk/checkin', studentId === null ? { digits } : { digits, studentId });
@@ -161,9 +161,9 @@ function checkin(digits, studentId) {
   });
 }
 
-// 목적: 같은 번호를 쓰는 학생 중 본인 이름을 고르게 해요.
-// 이유: 형제자매가 학부모 번호를 함께 쓰거나 뒷 4자리가 겹칠 수 있어요.
-// 방법: 이름 버튼을 textContent로 만들고, 누르면 그 학생 id로 다시 출석을 보내요.
+// 목적: 같은 번호를 쓰는 학생 중 본인 이름을 고르게 합니다.
+// 이유: 형제자매가 학부모 번호를 함께 쓰거나 뒷 4자리가 겹칠 수 있습니다.
+// 방법: 이름 버튼을 textContent로 만들고, 누르면 그 학생 id로 다시 출석을 보냅니다.
 function showChoices(digits, choices) {
   pendingDigits = digits;
   choicesEl.replaceChildren();
@@ -178,9 +178,9 @@ function showChoices(digits, choices) {
   show('choose');
 }
 
-// 목적: 출석 결과를 크게 보여 주고 잠시 뒤 키패드로 돌아가요.
-// 이유: 다음 학생이 바로 입력할 수 있어야 하고, 학생은 자기 이름과 시각을 확인해야 해요.
-// 방법: 상태마다 색과 문구를 정해요. 모르는 상태는 번호 확인 안내로 처리해요. 화면을 누르면 바로 돌아가요.
+// 목적: 출석 결과를 크게 보여 주고 잠시 뒤 키패드로 돌아갑니다.
+// 이유: 다음 학생이 바로 입력할 수 있어야 하고, 학생은 자기 이름과 시각을 확인해야 합니다.
+// 방법: 상태마다 색과 문구를 정합니다. 모르는 상태는 번호 확인 안내로 처리합니다. 화면을 누르면 바로 돌아갑니다.
 function showResult(data) {
   resultEl.className = 'screen';
   resultTime.textContent = '';
@@ -208,9 +208,9 @@ function showResult(data) {
   resultTimer = setTimeout(backToPad, RESULT_MS);
 }
 
-// 목적: 결과 화면이나 이름 고르기에서 번호 입력으로 돌아가요.
-// 이유: 다음 학생이 기다리지 않고 입력할 수 있어야 해요.
-// 방법: 타이머를 지우고 번호 입력 화면을 새로 열어요.
+// 목적: 결과 화면이나 이름 고르기에서 번호 입력으로 돌아갑니다.
+// 이유: 다음 학생이 기다리지 않고 입력할 수 있어야 합니다.
+// 방법: 타이머를 지우고 번호 입력 화면을 새로 엽니다.
 function backToPad() {
   clearTimeout(resultTimer);
   openEntry('digits');

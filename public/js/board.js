@@ -1,11 +1,11 @@
-// 목적: 교사용 TV 현황판의 동작이에요. 칸, 반 선택, 정보·반 관리·퇴원생·붙여넣기·출석 기기 창을 그려요.
-// 사용처: public/index.html이 common.js 다음에 불러요.
-// 근거: HTML 안 스크립트를 막는 보안 정책(CSP)을 켜려고 index.html에서 옮겼어요(DEC-14).
+// 목적: 교사용 TV 현황판의 동작입니다. 칸, 반 선택, 정보·반 관리·퇴원생·붙여넣기·출석 기기 창을 그립니다.
+// 사용처: public/index.html이 common.js 다음에 부릅니다.
+// 근거: HTML 안 스크립트를 막는 보안 정책(CSP)을 켜려고 index.html에서 옮겼습니다(DEC-14).
 
 const PER_PAGE = 8;
 const NAME_MAX = 12;
 const POLL_MS = 2000;
-const PASTE_BYTES_MAX = 9500; // 서버의 요청 크기 한도(10KB) 안에 들어가게 미리 막는다
+const PASTE_BYTES_MAX = 9500; // 서버의 요청 크기 한도(10KB) 안에 들어가게 미리 막습니다
 
 const grid = document.getElementById('grid');
 const summaryEl = document.getElementById('summary');
@@ -51,9 +51,9 @@ let polling = false;
 let toastTimer = null;
 let toastKind = '';
 
-// 목적: 교사 동작을 서버에 보내고 돌아온 최신 상태를 그려요.
-// 이유: 모든 쓰기 동작이 같은 "요청 → 상태 반영 → 실패 안내" 흐름을 써요.
-// 방법: api 호출 후 applyState. 응답을 돌려줘서 부른 쪽이 추가 정보(중복 번호 등)를 볼 수 있게 해요. 실패하면 토스트로 사유를 알리고 null을 돌려줘요.
+// 목적: 교사 동작을 서버에 보내고 돌아온 최신 상태를 그립니다.
+// 이유: 모든 쓰기 동작이 같은 "요청 → 상태 반영 → 실패 안내" 흐름을 씁니다.
+// 방법: api 호출 후 applyState. 응답을 돌려줘서 부른 쪽이 추가 정보(중복 번호 등)를 볼 수 있게 합니다. 실패하면 토스트로 사유를 알리고 null을 돌려줍니다.
 async function act(path, body) {
   try {
     const data = await api(path, body);
@@ -65,9 +65,9 @@ async function act(path, body) {
   }
 }
 
-// 목적: 화면 아래에 짧은 안내 문구를 띄운다.
-// 이유: 서버 연결 끊김이나 동작 실패를 교사가 바로 알아야 한다.
-// 방법: ms가 0이면 직접 지울 때까지 유지(연결 끊김용). 그 외에는 ms 뒤 자동으로 숨긴다.
+// 목적: 화면 아래에 짧은 안내 문구를 띄웁니다.
+// 이유: 서버 연결 끊김이나 동작 실패를 교사가 바로 알아야 합니다.
+// 방법: ms가 0이면 직접 지울 때까지 유지(연결 끊김용). 그 외에는 ms 뒤 자동으로 숨깁니다.
 function showToast(text, ms, kind) {
   clearTimeout(toastTimer);
   toastEl.textContent = text;
@@ -76,32 +76,32 @@ function showToast(text, ms, kind) {
   if (ms > 0) toastTimer = setTimeout(hideToast, ms);
 }
 
-// 목적: 안내 문구를 숨긴다.
-// 이유: 연결이 돌아오면 끊김 안내가 남아 있으면 안 된다.
-// 방법: hidden 처리하고 종류를 비운다.
+// 목적: 안내 문구를 숨깁니다.
+// 이유: 연결이 돌아오면 끊김 안내가 남아 있으면 안 됩니다.
+// 방법: hidden 처리하고 종류를 비웁니다.
 function hideToast() {
   clearTimeout(toastTimer);
   toastEl.hidden = true;
   toastKind = '';
 }
 
-// 목적: 지금 반 선택에 맞는, 현황판에 보일 학생 목록을 만들어요.
-// 이유: 퇴원생은 현황판에서 빠지고, 반을 고르면 그 반 학생만 보여야 해요.
-// 방법: 퇴원하지 않은 학생 중 반 선택이 "전체"이거나 그 반에 속한 학생만 골라요.
+// 목적: 지금 반 선택에 맞는, 현황판에 보일 학생 목록을 만듭니다.
+// 이유: 퇴원생은 현황판에서 빠지고, 반을 고르면 그 반 학생만 보여야 합니다.
+// 방법: 퇴원하지 않은 학생 중 반 선택이 "전체"이거나 그 반에 속한 학생만 고릅니다.
 function visibleStudents() {
   return students.filter((s) => !s.left && (classFilter === 'all' || s.classIds.includes(classFilter)));
 }
 
-// 목적: 학생 목록에서 "화면 구조가 바뀌었는지"를 판단할 키를 만들어요.
-// 이유: 이름, 반, 퇴원, 번호 유무가 바뀐 때만 칸을 다시 만들고, 출석 색과 시각만 바뀐 때는 제자리에서 칠해야 마우스를 올린 칸이 깜빡이지 않아요.
+// 목적: 학생 목록에서 "화면 구조가 바뀌었는지"를 판단할 키를 만듭니다.
+// 이유: 이름, 반, 퇴원, 번호 유무가 바뀐 때만 칸을 다시 만들고, 출석 색과 시각만 바뀐 때는 제자리에서 칠해야 마우스를 올린 칸이 깜빡이지 않습니다.
 // 방법: id, 이름, 퇴원 여부, 번호 유무, 반 목록을 이어 붙인 문자열(출석 상태는 제외).
 function structureKey(list) {
   return list.map((s) => `${s.id}|${s.name}|${s.left ? 1 : 0}|${s.phone ? 1 : 0}|${s.classIds.join(',')}`).join('\n');
 }
 
-// 목적: 서버가 준 최신 상태를 화면에 반영해요.
-// 이유: 폴링 응답과 교사 동작 응답이 모두 이 한 경로로 화면을 갱신해야 서로 어긋나지 않아요.
-// 방법: 옛 응답(rev가 작음)은 버려요. 이름 입력 중이면 입력창이 날아가지 않게 학생 목록과 칸 갱신은 건너뛰어요. 구조가 같으면 색만, 다르면 전체를 다시 그려요. 반 선택과 열린 창은 학생 목록을 바꾼 뒤에 맞춰요.
+// 목적: 서버가 준 최신 상태를 화면에 반영합니다.
+// 이유: 폴링 응답과 교사 동작 응답이 모두 이 한 경로로 화면을 갱신해야 서로 어긋나지 않습니다.
+// 방법: 옛 응답(rev가 작음)은 버립니다. 이름 입력 중이면 입력창이 날아가지 않게 학생 목록과 칸 갱신은 건너뜁니다. 구조가 같으면 색만, 다르면 전체를 다시 그립니다. 반 선택과 열린 창은 학생 목록을 바꾼 뒤에 맞춥니다.
 function applyState(next) {
   if (next.rev < rev) return;
   state = next;
@@ -120,9 +120,9 @@ function applyState(next) {
   refreshDialogs();
 }
 
-// 목적: 서버 상태를 한 번 가져와 반영한다.
-// 이유: 출석 기기의 입력이 몇 초 안에 이 화면에 나타나야 한다.
-// 방법: 겹쳐 호출되지 않게 막고, 실패하면 끊김 안내를, 성공하면 그 안내를 지운다.
+// 목적: 서버 상태를 한 번 가져와 반영합니다.
+// 이유: 출석 기기의 입력이 몇 초 안에 이 화면에 나타나야 합니다.
+// 방법: 겹쳐 호출되지 않게 막고, 실패하면 끊김 안내를, 성공하면 그 안내를 지웁니다.
 async function poll() {
   if (polling) return;
   polling = true;
@@ -136,9 +136,9 @@ async function poll() {
   }
 }
 
-// 목적: 반 선택 목록을 서버의 반 목록에 맞춰요.
-// 이유: 반을 만들거나 지우면 선택 목록도 바로 바뀌어야 하고, 지운 반을 고른 채로 남으면 안 돼요.
-// 방법: 반 목록이 바뀐 때만 option을 다시 만들어요. 고른 반이 사라졌으면 "전체"로 돌아가고 true를 돌려줘서 부른 쪽이 다시 그리게 해요.
+// 목적: 반 선택 목록을 서버의 반 목록에 맞춥니다.
+// 이유: 반을 만들거나 지우면 선택 목록도 바로 바뀌어야 하고, 지운 반을 고른 채로 남으면 안 됩니다.
+// 방법: 반 목록이 바뀐 때만 option을 다시 만듭니다. 고른 반이 사라졌으면 "전체"로 돌아가고 true를 돌려줘서 부른 쪽이 다시 그리게 합니다.
 function updateClassFilter() {
   const key = state.classes.map((c) => `${c.id}:${c.name}`).join('|');
   if (classFilterEl.dataset.key === key) return false;
@@ -155,8 +155,8 @@ function updateClassFilter() {
   return reset;
 }
 
-// 목적: 현재 페이지의 8칸과 머리글을 화면에 그려요.
-// 이유: 페이지 이동, 반 선택, 추가, 삭제, 이름 수정, 구조 변경이 모두 같은 그리기 경로를 써요.
+// 목적: 현재 페이지의 8칸과 머리글을 화면에 그립니다.
+// 이유: 페이지 이동, 반 선택, 추가, 삭제, 이름 수정, 구조 변경이 모두 같은 그리기 경로를 씁니다.
 // 방법: 보일 학생 중 해당 구간 칸 → 마지막 페이지면 추가 칸 → 나머지는 빈 칸, 이동이면 슬라이드 애니메이션.
 function render() {
   const list = visibleStudents();
@@ -186,16 +186,16 @@ function render() {
   }
 }
 
-// 목적: 전체 페이지 수를 계산해요.
-// 이유: 마지막 페이지에는 늘 "학생 추가" 칸이 들어갈 자리가 있어야 해요.
+// 목적: 전체 페이지 수를 계산합니다.
+// 이유: 마지막 페이지에는 늘 "학생 추가" 칸이 들어갈 자리가 있어야 합니다.
 // 방법: 지금 보이는 학생이 8명으로 딱 차면 추가 칸만 있는 페이지가 하나 더 생기도록 floor(n/8)+1.
 function pageCount() {
   return Math.floor(visibleStudents().length / PER_PAGE) + 1;
 }
 
-// 목적: 등원·하원 인원과 페이지 표시, 이전/다음 버튼 상태를 갱신해요.
-// 이유: 출석이 바뀔 때는 칸을 다시 만들지 않고 머리글만 고치면 돼요.
-// 방법: 보이는 학생의 상태별 수를 세고, 첫/마지막 페이지에서는 해당 방향 버튼을 꺼요.
+// 목적: 등원·하원 인원과 페이지 표시, 이전/다음 버튼 상태를 갱신합니다.
+// 이유: 출석이 바뀔 때는 칸을 다시 만들지 않고 머리글만 고치면 됩니다.
+// 방법: 보이는 학생의 상태별 수를 세고, 첫/마지막 페이지에서는 해당 방향 버튼을 끕니다.
 function updateHeader() {
   const list = visibleStudents();
   const count = (status) => list.filter((s) => s.status === status).length;
@@ -205,9 +205,9 @@ function updateHeader() {
   nextBtn.disabled = page === pageCount() - 1;
 }
 
-// 목적: 학생 한 명의 칸(이름, 출석 토글, 번호 없음 표시, 수정·정보·삭제 버튼)을 만들어요.
-// 이유: 이름 크게 + 등원 초록, 미등원 빨강, 하원 회색이라는 화면의 핵심 단위예요.
-// 방법: 전체를 덮는 토글 버튼과 별도의 액션 버튼을 형제로 둬요(버튼 안에 버튼을 넣지 않음). 이름은 textContent로 넣어요. 번호가 없는 학생에게만 "번호 없음" 표시를 붙여요.
+// 목적: 학생 한 명의 칸(이름, 출석 토글, 번호 없음 표시, 수정·정보·삭제 버튼)을 만듭니다.
+// 이유: 이름 크게 + 등원 초록, 미등원 빨강, 하원 회색이라는 화면의 핵심 단위입니다.
+// 방법: 전체를 덮는 토글 버튼과 별도의 액션 버튼을 형제로 둡니다(버튼 안에 버튼을 넣지 않음). 이름은 textContent로 넣습니다. 번호가 없는 학생에게만 "번호 없음" 표시를 붙입니다.
 function buildCell(student) {
   const cell = document.createElement('div');
   cell.className = 'cell';
@@ -248,9 +248,9 @@ function buildCell(student) {
   return cell;
 }
 
-// 목적: 칸 모서리에 뜨는 동그란 액션 버튼 하나를 만든다.
-// 이유: 수정/삭제 버튼의 모양과 접근성 이름을 한 곳에서 맞춘다.
-// 방법: data-act로 동작을 구분하고 aria-label에 학생 이름을 넣는다.
+// 목적: 칸 모서리에 뜨는 동그란 액션 버튼 하나를 만듭니다.
+// 이유: 수정/삭제 버튼의 모양과 접근성 이름을 한 곳에서 맞춥니다.
+// 방법: data-act로 동작을 구분하고 aria-label에 학생 이름을 넣습니다.
 function buildIconButton(act, glyph, label) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -261,18 +261,18 @@ function buildIconButton(act, glyph, label) {
   return button;
 }
 
-// 목적: 글자가 있는 알약 모양 액션 버튼을 만들어요.
-// 이유: "정보"는 아이콘만으로는 뜻이 안 통해서 글자로 보여 줘요.
-// 방법: buildIconButton과 같은 구조에 pill 클래스를 더해요.
+// 목적: 글자가 있는 알약 모양 액션 버튼을 만듭니다.
+// 이유: "정보"는 아이콘만으로는 뜻이 안 통해서 글자로 보여 줍니다.
+// 방법: buildIconButton과 같은 구조에 pill 클래스를 더합니다.
 function buildPillButton(act, text, label) {
   const button = buildIconButton(act, text, label);
   button.classList.add('pill');
   return button;
 }
 
-// 목적: 마지막 페이지의 빈 자리에 "학생 추가" 칸을 만든다.
-// 이유: 8칸을 넘는 학생은 새 페이지로 이어져야 해서 추가 경로가 필요하다.
-// 방법: 점선 칸 하나. 평소엔 흐리게 있다가 마우스를 올리면 서서히 또렷해진다.
+// 목적: 마지막 페이지의 빈 자리에 "학생 추가" 칸을 만듭니다.
+// 이유: 8칸을 넘는 학생은 새 페이지로 이어져야 해서 추가 경로가 필요합니다.
+// 방법: 점선 칸 하나. 평소엔 흐리게 있다가 마우스를 올리면 서서히 또렷해집니다.
 function buildAddCell() {
   const cell = document.createElement('div');
   cell.className = 'cell add';
@@ -290,9 +290,9 @@ function buildAddCell() {
   return cell;
 }
 
-// 목적: 학생이 없는 남는 칸을 만든다.
-// 이유: 마지막 페이지도 8칸 격자가 무너지지 않아야 접힌 종이 느낌이 유지된다.
-// 방법: 눈에 띄지 않는 빈 div를 스크린리더에서 숨긴다.
+// 목적: 학생이 없는 남는 칸을 만듭니다.
+// 이유: 마지막 페이지도 8칸 격자가 무너지지 않아야 접힌 종이 느낌이 유지됩니다.
+// 방법: 눈에 띄지 않는 빈 div를 스크린리더에서 숨깁니다.
 function buildEmptyCell() {
   const cell = document.createElement('div');
   cell.className = 'cell empty';
@@ -300,9 +300,9 @@ function buildEmptyCell() {
   return cell;
 }
 
-// 목적: 칸 안에서 바로 이름을 고치는 입력창을 만든다.
-// 이유: prompt() 창은 큰 글씨 화면 흐름을 끊는다.
-// 방법: Enter 저장, Esc 취소, 포커스를 잃으면 저장. 한글 조합 중 Enter는 무시한다.
+// 목적: 칸 안에서 바로 이름을 고치는 입력창을 만듭니다.
+// 이유: prompt() 창은 큰 글씨 화면 흐름을 끊습니다.
+// 방법: Enter 저장, Esc 취소, 포커스를 잃으면 저장. 한글 조합 중 Enter는 무시합니다.
 function buildEditor(student) {
   const input = document.createElement('input');
   input.className = 'name-input';
@@ -323,9 +323,9 @@ function buildEditor(student) {
   return input;
 }
 
-// 목적: 칸의 색, 상태 글자(시각 포함), aria 설명을 학생 데이터에 맞춰요.
-// 이유: 그릴 때와 서버 상태가 바뀔 때 같은 모양이 나와야 하고, 제자리 갱신이어야 포커스가 안 날아가요.
-// 방법: absent/in/out 클래스를 갈아 끼우고, 상태 글자를 "미등원", "등원 14:02", "하원 17:40"으로 바꿔요.
+// 목적: 칸의 색, 상태 글자(시각 포함), aria 설명을 학생 데이터에 맞춥니다.
+// 이유: 그릴 때와 서버 상태가 바뀔 때 같은 모양이 나와야 하고, 제자리 갱신이어야 포커스가 안 날아갑니다.
+// 방법: absent/in/out 클래스를 갈아 끼우고, 상태 글자를 "미등원", "등원 14:02", "하원 17:40"으로 바꿉니다.
 function paintCell(cell, student) {
   for (const status of ['absent', 'in', 'out']) cell.classList.toggle(status, student.status === status);
   const toggle = cell.querySelector('.toggle');
@@ -337,9 +337,9 @@ function paintCell(cell, student) {
   toggle.setAttribute('aria-label', `${student.name} ${text}. 누르면 다음 상태로 바뀌어요.`);
 }
 
-// 목적: 지금 화면의 모든 학생 칸 색을 최신 출석 상태로 맞춰요.
-// 이유: 출석 기기에서 입력이 들어오면 칸을 다시 만들지 않고 색만 바꿔야 해요.
-// 방법: data-id로 학생을 찾아 paintCell을 불러요.
+// 목적: 지금 화면의 모든 학생 칸 색을 최신 출석 상태로 맞춥니다.
+// 이유: 출석 기기에서 입력이 들어오면 칸을 다시 만들지 않고 색만 바꿔야 합니다.
+// 방법: data-id로 학생을 찾아 paintCell을 부릅니다.
 function paintAll() {
   for (const cell of grid.querySelectorAll('.cell[data-id]')) {
     const student = students.find((s) => s.id === Number(cell.dataset.id));
@@ -347,9 +347,9 @@ function paintAll() {
   }
 }
 
-// 목적: 격자 안의 클릭을 칸별 동작(상태 넘기기, 수정, 정보, 삭제, 추가)으로 나눠 줘요.
-// 이유: 페이지를 넘길 때마다 칸을 새로 만드니 칸마다 리스너를 달지 않아요.
-// 방법: 이벤트 위임. 눌린 버튼과 가장 가까운 .cell의 data-id로 학생을 찾아요.
+// 목적: 격자 안의 클릭을 칸별 동작(상태 넘기기, 수정, 정보, 삭제, 추가)으로 나눠 줍니다.
+// 이유: 페이지를 넘길 때마다 칸을 새로 만드니 칸마다 리스너를 달지 않습니다.
+// 방법: 이벤트 위임. 눌린 버튼과 가장 가까운 .cell의 data-id로 학생을 찾습니다.
 function onGridClick(event) {
   const button = event.target.closest('button');
   const cell = event.target.closest('.cell');
@@ -369,17 +369,17 @@ function onGridClick(event) {
   else if (button.dataset.act === 'delete') removeStudent(student);
 }
 
-// 목적: 학생 이름 수정을 시작한다.
-// 이유: 칸 안에서 바로 고치게 하려는 것이다.
-// 방법: editingId를 잡고 다시 그리면 해당 칸이 입력창으로 나온다.
+// 목적: 학생 이름 수정을 시작합니다.
+// 이유: 칸 안에서 바로 고치게 하려는 것입니다.
+// 방법: editingId를 잡고 다시 그리면 해당 칸이 입력창으로 나옵니다.
 function startEdit(student) {
   editingId = student.id;
   render();
 }
 
-// 목적: 입력한 이름을 저장하고 수정 상태를 끝낸다.
-// 이유: Enter와 blur가 연달아 불려도 한 번만 처리해야 한다(다시 그리면서 입력창이 사라질 때 blur가 또 온다).
-// 방법: editingId가 이미 다르면 바로 반환. 바뀐 이름이면 화면에 먼저 반영하고 서버에 보낸다(공백뿐이면 버림). 서버 응답이 실패하면 다음 폴링이 원래 이름으로 되돌린다.
+// 목적: 입력한 이름을 저장하고 수정 상태를 끝냅니다.
+// 이유: Enter와 blur가 연달아 불려도 한 번만 처리해야 합니다(다시 그리면서 입력창이 사라질 때 blur가 또 옵니다).
+// 방법: editingId가 이미 다르면 바로 반환. 바뀐 이름이면 화면에 먼저 반영하고 서버에 보냅니다(공백뿐이면 버림). 서버 응답이 실패하면 다음 폴링이 원래 이름으로 되돌립니다.
 function commitEdit(id, value) {
   if (editingId !== id) return;
   editingId = null;
@@ -392,25 +392,25 @@ function commitEdit(id, value) {
   render();
 }
 
-// 목적: 이름 수정을 저장 없이 끝낸다.
-// 이유: Esc로 실수를 되돌릴 수 있어야 한다.
-// 방법: commitEdit과 같은 중복 호출 방어 후 editingId만 풀고 다시 그린다.
+// 목적: 이름 수정을 저장 없이 끝냅니다.
+// 이유: Esc로 실수를 되돌릴 수 있어야 합니다.
+// 방법: commitEdit과 같은 중복 호출 방어 후 editingId만 풀고 다시 그립니다.
 function cancelEdit(id) {
   if (editingId !== id) return;
   editingId = null;
   render();
 }
 
-// 목적: 수정을 마친 학생 칸의 토글 버튼으로 포커스를 돌려준다.
-// 이유: 칸을 다시 만들면 포커스가 body로 빠져 키보드 사용자가 자리를 잃는다.
-// 방법: Enter/Esc로 끝낼 때만 호출한다(blur로 끝났으면 사용자가 다른 곳을 누른 것이라 건드리지 않는다).
+// 목적: 수정을 마친 학생 칸의 토글 버튼으로 포커스를 돌려줍니다.
+// 이유: 칸을 다시 만들면 포커스가 body로 빠져 키보드 사용자가 자리를 잃습니다.
+// 방법: Enter/Esc로 끝낼 때만 호출합니다(blur로 끝났으면 사용자가 다른 곳을 누른 것이라 건드리지 않습니다).
 function focusToggle(id) {
   const toggle = grid.querySelector(`[data-id="${id}"] .toggle`);
   if (toggle) toggle.focus();
 }
 
-// 목적: 새 학생을 명단 끝에 넣고 바로 이름을 입력하게 해요.
-// 이유: 붙여넣기 뒤에 한 명씩 추가하는 경로예요(DEC-12). 반을 고른 상태면 그 반에 넣어야 바로 보여요.
+// 목적: 새 학생을 명단 끝에 넣고 바로 이름을 입력하게 합니다.
+// 이유: 붙여넣기 뒤에 한 명씩 추가하는 경로입니다(DEC-12). 반을 고른 상태면 그 반에 넣어야 바로 보입니다.
 // 방법: 서버에 추가 요청(고른 반 포함) → 응답 상태를 반영 → 새 학생이 있는 페이지로 이동 → 수정 상태로 렌더.
 async function addStudent() {
   try {
@@ -425,17 +425,17 @@ async function addStudent() {
   }
 }
 
-// 목적: 잘못 등록한 학생을 명단과 기록에서 지워요.
-// 이유: 지우면 되돌릴 수 없고 그 학생의 출석 기록도 함께 사라져요(DEC-11). 학원을 그만둔 학생은 퇴원으로 처리해요.
-// 방법: confirm으로 한 번 확인한 뒤 서버에 삭제를 요청해요(페이지는 render가 범위로 보정).
+// 목적: 잘못 등록한 학생을 명단과 기록에서 지웁니다.
+// 이유: 지우면 되돌릴 수 없고 그 학생의 출석 기록도 함께 사라집니다(DEC-11). 학원을 그만둔 학생은 퇴원으로 처리합니다.
+// 방법: confirm으로 한 번 확인한 뒤 서버에 삭제를 요청합니다(페이지는 render가 범위로 보정).
 function removeStudent(student) {
   if (!confirm(`'${student.name}' 학생을 삭제할까요?\n출석 기록도 함께 지워지고 되돌릴 수 없습니다.\n학원을 그만둔 학생이면 '정보'에서 퇴원 처리를 해 주세요.`)) return;
   act('/api/delete', { id: student.id });
 }
 
-// 목적: 학생의 번호·반·퇴원 창을 열어요.
-// 이유: 칸에는 버튼을 많이 둘 수 없어서, 자주 쓰지 않는 설정은 창 하나에 모아요.
-// 방법: 열 학생 id를 기억하고, 창 내용을 그린 뒤 번호 칸에 지금 번호를 넣어요.
+// 목적: 학생의 번호·반·퇴원 창을 엽니다.
+// 이유: 칸에는 버튼을 많이 둘 수 없어서, 자주 쓰지 않는 설정은 창 하나에 모읍니다.
+// 방법: 열 학생 id를 기억하고, 창 내용을 그린 뒤 번호 칸에 지금 번호를 넣습니다.
 function openStudentDialog(id) {
   dialogStudentId = id;
   const student = students.find((s) => s.id === id);
@@ -444,9 +444,9 @@ function openStudentDialog(id) {
   studentDialog.showModal();
 }
 
-// 목적: 학생 창의 제목과 반 체크 상자를 그려요.
-// 이유: 반 목록이나 학생 이름이 바뀌면 창도 맞춰야 해요.
-// 방법: 반마다 체크 상자를 만들고, 학생이 속한 반은 체크해요. 학생이 사라졌으면 창을 닫아요.
+// 목적: 학생 창의 제목과 반 체크 상자를 그립니다.
+// 이유: 반 목록이나 학생 이름이 바뀌면 창도 맞춰야 합니다.
+// 방법: 반마다 체크 상자를 만들고, 학생이 속한 반은 체크합니다. 학생이 사라졌으면 창을 닫습니다.
 function drawStudentDialog() {
   const student = students.find((s) => s.id === dialogStudentId);
   if (!student) {
@@ -467,9 +467,9 @@ function drawStudentDialog() {
   studentNoClass.hidden = state.classes.length > 0;
 }
 
-// 목적: 학생 창의 번호를 저장해요.
-// 이유: 번호가 있어야 출석 기기로 출석할 수 있어요. 같은 번호를 쓰는 형제자매도 있어서 막지 않고 알리기만 해요.
-// 방법: /api/phone에 보내고, 서버가 같은 번호가 있다고 하면 안내를 띄워요.
+// 목적: 학생 창의 번호를 저장합니다.
+// 이유: 번호가 있어야 출석 기기로 출석할 수 있습니다. 같은 번호를 쓰는 형제자매도 있어서 막지 않고 알리기만 합니다.
+// 방법: /api/phone에 보내고, 서버가 같은 번호가 있다고 하면 안내를 띄웁니다.
 async function savePhone() {
   const data = await act('/api/phone', { id: dialogStudentId, phone: phoneInput.value });
   if (!data) return;
@@ -477,17 +477,17 @@ async function savePhone() {
   else showToast('번호를 저장했어요.', 2500, 'info');
 }
 
-// 목적: 학생 창의 반 체크 상자가 바뀌면 바로 저장해요.
-// 이유: 저장 버튼을 따로 누르지 않아도 되게 해요.
-// 방법: 체크된 반 id를 모두 모아 /api/assign으로 보내요.
+// 목적: 학생 창의 반 체크 상자가 바뀌면 바로 저장합니다.
+// 이유: 저장 버튼을 따로 누르지 않아도 되게 합니다.
+// 방법: 체크된 반 id를 모두 모아 /api/assign으로 보냅니다.
 function saveClasses() {
   const classIds = [...studentClassesEl.querySelectorAll('input:checked')].map((box) => Number(box.value));
   act('/api/assign', { id: dialogStudentId, classIds });
 }
 
-// 목적: 학원을 그만둔 학생을 퇴원 처리해요.
-// 이유: 현황판과 출석 기기에서는 빼되, 상담용 기록은 남겨야 해요(DEC-11).
-// 방법: 번호가 지워진다는 것을 confirm으로 알린 뒤 /api/leave를 보내고 창을 닫아요.
+// 목적: 학원을 그만둔 학생을 퇴원 처리합니다.
+// 이유: 현황판과 출석 기기에서는 빼되, 상담용 기록은 남겨야 합니다(DEC-11).
+// 방법: 번호가 지워진다는 것을 confirm으로 알린 뒤 /api/leave를 보내고 창을 닫습니다.
 async function leaveStudent() {
   const student = students.find((s) => s.id === dialogStudentId);
   if (!student) return;
@@ -496,9 +496,9 @@ async function leaveStudent() {
   if (data) studentDialog.close();
 }
 
-// 목적: 반 관리 창의 반 목록을 그려요.
-// 이유: 반 이름을 바꾸거나 지우는 곳이에요.
-// 방법: 반마다 이름 입력칸, 이름 저장, 삭제 버튼을 만들어요. 버튼에는 data-act와 data-id를 둬요.
+// 목적: 반 관리 창의 반 목록을 그립니다.
+// 이유: 반 이름을 바꾸거나 지우는 곳입니다.
+// 방법: 반마다 이름 입력칸, 이름 저장, 삭제 버튼을 만듭니다. 버튼에는 data-act와 data-id를 둡니다.
 function drawClassList() {
   classListEl.replaceChildren();
   if (state.classes.length === 0) {
@@ -534,9 +534,9 @@ function drawClassList() {
   }
 }
 
-// 목적: 반 관리 창의 버튼(이름 저장, 삭제)을 처리해요.
-// 이유: 반을 지우면 학생들의 반 표시도 함께 빠지니 확인이 필요해요.
-// 방법: 이벤트 위임. 이름 저장은 같은 줄의 입력값을 보내고, 삭제는 confirm 후 보내요.
+// 목적: 반 관리 창의 버튼(이름 저장, 삭제)을 처리합니다.
+// 이유: 반을 지우면 학생들의 반 표시도 함께 빠지니 확인이 필요합니다.
+// 방법: 이벤트 위임. 이름 저장은 같은 줄의 입력값을 보내고, 삭제는 confirm 후 보냅니다.
 function onClassListClick(event) {
   const button = event.target.closest('button[data-act]');
   if (!button) return;
@@ -551,17 +551,17 @@ function onClassListClick(event) {
   }
 }
 
-// 목적: 새 반을 만들어요.
-// 이유: 타임(반)별로 현황판과 기록을 나눠 봐야 해요.
-// 방법: 입력한 이름을 보내고, 성공하면 입력칸을 비워요.
+// 목적: 새 반을 만듭니다.
+// 이유: 타임(반)별로 현황판과 기록을 나눠 봐야 합니다.
+// 방법: 입력한 이름을 보내고, 성공하면 입력칸을 비웁니다.
 async function addClass() {
   const data = await act('/api/classes/add', { name: classNewInput.value });
   if (data) classNewInput.value = '';
 }
 
-// 목적: 퇴원생 창의 목록을 그려요.
-// 이유: 퇴원생은 현황판에 없어서, 다시 다니게 된 학생을 복귀시킬 곳이 필요해요.
-// 방법: 퇴원한 학생마다 이름과 복귀 버튼을 만들어요.
+// 목적: 퇴원생 창의 목록을 그립니다.
+// 이유: 퇴원생은 현황판에 없어서, 다시 다니게 된 학생을 복귀시킬 곳이 필요합니다.
+// 방법: 퇴원한 학생마다 이름과 복귀 버튼을 만듭니다.
 function drawLeftList() {
   leftListEl.replaceChildren();
   const left = students.filter((s) => s.left);
@@ -586,9 +586,9 @@ function drawLeftList() {
   }
 }
 
-// 목적: 복사한 표 글자를 줄과 칸으로 나눠요.
-// 이유: 엑셀과 구글 스프레드시트는 칸 안에 줄바꿈이나 따옴표가 있으면 그 칸을 따옴표로 감싸요. 줄바꿈으로만 나누면 한 칸이 두 학생으로 쪼개져요.
-// 방법: 글자를 차례로 읽어요. 따옴표로 시작한 칸은 닫는 따옴표까지 한 칸이고, 안의 "" 는 " 하나예요. 칸 안의 줄바꿈은 공백으로 바꿔요.
+// 목적: 복사한 표 글자를 줄과 칸으로 나눕니다.
+// 이유: 엑셀과 구글 스프레드시트는 칸 안에 줄바꿈이나 따옴표가 있으면 그 칸을 따옴표로 감쌉니다. 줄바꿈으로만 나누면 한 칸이 두 학생으로 쪼개집니다.
+// 방법: 글자를 차례로 읽습니다. 따옴표로 시작한 칸은 닫는 따옴표까지 한 칸이고, 안의 "" 는 " 하나입니다. 칸 안의 줄바꿈은 공백으로 바꿉니다.
 function parseTsv(text) {
   const rows = [];
   let row = [];
@@ -627,9 +627,9 @@ function parseTsv(text) {
   return rows;
 }
 
-// 목적: 붙여넣은 표 글자를 [이름, 번호, 반] 행으로 바꿔요.
-// 이유: 학원 명단에는 학교·학년 같은 다른 칸도 있고(DEC-12), '번호'라는 이름의 칸이 휴대폰이 아니라 줄 번호일 때도 있어요.
-// 방법: 첫 줄에서 '이름' 칸을 찾으면 제목 줄로 봐요. 번호 칸은 휴대폰·전화·연락처가 들어간 제목을 먼저 보고, 그중 값이 휴대폰번호처럼 보이는 칸을 골라요. 제목 줄이 없으면 첫 칸을 이름으로 봐요. 이름이 빈 줄은 건너뛰어요.
+// 목적: 붙여넣은 표 글자를 [이름, 번호, 반] 행으로 바꿉니다.
+// 이유: 학원 명단에는 학교·학년 같은 다른 칸도 있고(DEC-12), '번호'라는 이름의 칸이 휴대폰이 아니라 줄 번호일 때도 있습니다.
+// 방법: 첫 줄에서 '이름' 칸을 찾으면 제목 줄로 봅니다. 번호 칸은 휴대폰·전화·연락처가 들어간 제목을 먼저 보고, 그중 값이 휴대폰번호처럼 보이는 칸을 고릅니다. 제목 줄이 없으면 첫 칸을 이름으로 봅니다. 이름이 빈 줄은 건너뜁니다.
 function parsePaste(text) {
   const lines = parseTsv(text);
   const header = lines[0] ?? [];
@@ -658,9 +658,9 @@ function parsePaste(text) {
   return { rows, lineNumbers, hasHeader, phoneCol, classCol };
 }
 
-// 목적: 붙여넣은 명단을 서버에 보내 미리보기를 보여 줘요. 아직 저장하지 않아요.
-// 이유: 추가될 학생과 건너뛸 행을 확인한 뒤에만 명단이 바뀌어야 해요(DEC-12).
-// 방법: parsePaste로 행을 만들고 크기를 확인한 뒤 /api/import/preview를 불러요. 결과를 추가·이미 있음·읽지 못함으로 나눠 그리고, 추가할 학생이 있으면 "추가하기"를 켜요.
+// 목적: 붙여넣은 명단을 서버에 보내 미리보기를 보여 줍니다. 아직 저장하지 않습니다.
+// 이유: 추가될 학생과 건너뛸 행을 확인한 뒤에만 명단이 바뀌어야 합니다(DEC-12).
+// 방법: parsePaste로 행을 만들고 크기를 확인한 뒤 /api/import/preview를 부릅니다. 결과를 추가·이미 있음·읽지 못함으로 나눠 그리고, 추가할 학생이 있으면 "추가하기"를 켭니다.
 async function checkPaste() {
   pasteApplyBtn.disabled = true;
   pastedRows = null;
@@ -702,27 +702,27 @@ async function checkPaste() {
   }
 }
 
-// 목적: 미리보기에 소제목 한 줄을 더해요.
-// 이유: 추가, 건너뜀, 오류를 나눠 보여 줘요.
-// 방법: h3를 textContent로 만들어 붙여요.
+// 목적: 미리보기에 소제목 한 줄을 더합니다.
+// 이유: 추가, 건너뜀, 오류를 나눠 보여 줍니다.
+// 방법: h3를 textContent로 만들어 붙입니다.
 function addPreviewHeading(text) {
   const heading = document.createElement('h3');
   heading.textContent = text;
   pastePreview.append(heading);
 }
 
-// 목적: 미리보기에 글 한 줄을 더해요.
-// 이유: 학생 이름이 들어가는 글이라 innerHTML을 쓰지 않아요.
-// 방법: p를 textContent로 만들어 붙여요.
+// 목적: 미리보기에 글 한 줄을 더합니다.
+// 이유: 학생 이름이 들어가는 글이라 innerHTML을 쓰지 않습니다.
+// 방법: p를 textContent로 만들어 붙입니다.
 function addPreviewLine(text) {
   const line = document.createElement('p');
   line.textContent = text;
   pastePreview.append(line);
 }
 
-// 목적: 미리보기에서 확인한 명단을 실제로 추가해요.
-// 이유: 서버가 같은 계산을 다시 해서, 그 사이 바뀐 명단에도 맞게 추가해요.
-// 방법: 미리보기 때 만든 행을 /api/import/apply로 보내고, 결과를 알린 뒤 창을 비우고 닫아요.
+// 목적: 미리보기에서 확인한 명단을 실제로 추가합니다.
+// 이유: 서버가 같은 계산을 다시 해서, 그 사이 바뀐 명단에도 맞게 추가합니다.
+// 방법: 미리보기 때 만든 행을 /api/import/apply로 보내고, 결과를 알린 뒤 창을 비우고 닫습니다.
 async function applyPaste() {
   if (!pastedRows) return;
   pasteApplyBtn.disabled = true;
@@ -735,9 +735,9 @@ async function applyPaste() {
   pasteDialog.close();
 }
 
-// 목적: 출석 기기 창(주소, QR, 등록 코드, 기기 목록)을 최신 상태로 그려요.
-// 이유: 등록 코드는 10분 뒤 사라지고, 기기가 등록되면 목록에 바로 나와야 해요.
-// 방법: 주소가 바뀐 때만 QR을 다시 그려요. 등록 코드가 열려 있으면 코드와 남은 분을, 기기마다 이름·등록일·등록 취소 버튼을 보여 줘요.
+// 목적: 출석 기기 창(주소, QR, 등록 코드, 기기 목록)을 최신 상태로 그립니다.
+// 이유: 등록 코드는 10분 뒤 사라지고, 기기가 등록되면 목록에 바로 나와야 합니다.
+// 방법: 주소가 바뀐 때만 QR을 다시 그립니다. 등록 코드가 열려 있으면 코드와 남은 분을, 기기마다 이름·등록일·등록 취소 버튼을 보여 줍니다.
 function drawDevices() {
   if (state.kioskUrl !== drawnQrUrl) {
     drawnQrUrl = state.kioskUrl;
@@ -769,9 +769,9 @@ function drawDevices() {
   }
 }
 
-// 목적: 출석 기기 주소를 QR 이미지로 그려요.
-// 이유: 교사 PC 주소가 바뀌어도 출석 기기가 QR로 새 주소를 바로 열 수 있어야 해요.
-// 방법: 번들한 qrcode 라이브러리로 SVG를 만들어 넣어요. 주소가 없으면 안내 글자를 보여 줘요.
+// 목적: 출석 기기 주소를 QR 이미지로 그립니다.
+// 이유: 교사 PC 주소가 바뀌어도 출석 기기가 QR로 새 주소를 바로 열 수 있어야 합니다.
+// 방법: 번들한 qrcode 라이브러리로 SVG를 만들어 넣습니다. 주소가 없으면 안내 글자를 보여 줍니다.
 function drawQr(url) {
   if (!url) {
     deviceQr.textContent = '주소 없음';
@@ -783,9 +783,9 @@ function drawQr(url) {
   deviceQr.innerHTML = code.createSvgTag({ cellSize: 1, margin: 4, scalable: true });
 }
 
-// 목적: 열려 있는 창의 내용을 최신 상태에 맞춰요.
-// 이유: 폴링으로 반, 퇴원생, 기기 목록이 바뀌면 열린 창에도 보여야 해요. 입력 중인 창을 다시 그리면 입력이 날아가요.
-// 방법: 열린 창마다, 그 안에서 입력칸에 포커스가 없을 때만 다시 그려요.
+// 목적: 열려 있는 창의 내용을 최신 상태에 맞춥니다.
+// 이유: 폴링으로 반, 퇴원생, 기기 목록이 바뀌면 열린 창에도 보여야 합니다. 입력 중인 창을 다시 그리면 입력이 날아갑니다.
+// 방법: 열린 창마다, 그 안에서 입력칸에 포커스가 없을 때만 다시 그립니다.
 function refreshDialogs() {
   const typing = (dialog) => dialog.contains(document.activeElement)
     && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)
@@ -796,16 +796,16 @@ function refreshDialogs() {
   if (devicesDialog.open) drawDevices();
 }
 
-// 목적: 창을 열면서 내용을 먼저 그려요.
-// 이유: 창이 빈 채로 잠깐 보이지 않게 해요.
+// 목적: 창을 열면서 내용을 먼저 그립니다.
+// 이유: 창이 빈 채로 잠깐 보이지 않게 합니다.
 // 방법: 그리기 함수를 부른 뒤 showModal.
 function openDialog(dialog, draw) {
   if (state) draw();
   dialog.showModal();
 }
 
-// 목적: 페이지를 앞뒤로 넘긴다.
-// 이유: 8명을 넘는 학생을 옆 페이지로 보기 위해서다.
+// 목적: 페이지를 앞뒤로 넘깁니다.
+// 이유: 8명을 넘는 학생을 옆 페이지로 보기 위해서입니다.
 // 방법: 범위 안으로 보정하고 바뀔 때만, 방향에 맞는 슬라이드 클래스를 예약한 뒤 렌더.
 function goPage(delta) {
   const target = Math.min(Math.max(page + delta, 0), pageCount() - 1);
@@ -815,9 +815,9 @@ function goPage(delta) {
   render();
 }
 
-// 목적: 키보드 입력을 처리해요. ←/→는 페이지 이동이에요.
-// 이유: 교사가 마우스 없이도 TV 앞에서 넘길 수 있어야 해요.
-// 방법: 창이 열려 있거나, 입력 중이거나, 조합키가 눌려 있으면 무시해요.
+// 목적: 키보드 입력을 처리합니다. ←/→는 페이지 이동입니다.
+// 이유: 교사가 마우스 없이도 TV 앞에서 넘길 수 있어야 합니다.
+// 방법: 창이 열려 있거나, 입력 중이거나, 조합키가 눌려 있으면 무시합니다.
 function onKeydown(event) {
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
   if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
@@ -882,7 +882,7 @@ devicesDialog.addEventListener('close', () => {
 
 document.addEventListener('keydown', onKeydown);
 
-// 첫 상태가 빈 명단이면 구조가 바뀌지 않았다고 보아 그리지 않으니, 시작할 때 한 번 그린다.
+// 첫 상태가 빈 명단이면 구조가 바뀌지 않았다고 보아 그리지 않으니, 시작할 때 한 번 그립니다.
 render();
 poll();
 setInterval(poll, POLL_MS);

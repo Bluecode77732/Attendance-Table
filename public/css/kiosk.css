@@ -1,6 +1,6 @@
-/* 목적: 출석 기기(갤럭시) 화면의 모양이에요. */
-/* 사용처: public/kiosk.html이 <link>로 불러요. */
-/* 근거: HTML 안 스타일을 막는 보안 정책(CSP)을 켜려고 kiosk.html에서 옮겼어요(DEC-14). */
+/* 목적: 출석 기기(갤럭시) 화면의 모양입니다. */
+/* 사용처: public/kiosk.html이 <link>로 부릅니다. */
+/* 근거: HTML 안 스타일을 막는 보안 정책(CSP)을 켜려고 kiosk.html에서 옮겼습니다(DEC-14). */
 
 :root {
   --in: #178a48;
