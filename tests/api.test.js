@@ -60,7 +60,26 @@ describe('서버 API', () => {
       assert.equal((await lan('/')).status, 403);
       assert.equal((await lan('/records')).status, 403);
       assert.equal((await lan('/vendor/qrcode.js')).status, 403);
+      assert.equal((await lan('/js/board.js')).status, 403);
+      assert.equal((await lan('/css/board.css')).status, 403);
+      assert.equal((await lan('/js/records.js')).status, 403);
       assert.equal((await lan('/k')).status, 200);
+      assert.equal((await lan('/js/common.js')).status, 200);
+      assert.equal((await lan('/js/kiosk.js')).status, 200);
+      assert.equal((await lan('/css/kiosk.css')).status, 200);
+    });
+
+    it('CSP는 HTML 안 스크립트와 스타일을 허용하지 않아요', async () => {
+      const res = await new Promise((resolve, reject) => {
+        require('node:http').get({ host: '127.0.0.1', port: server.port, path: '/k', headers: { Host: `localhost:${server.port}` } }, (r) => {
+          r.resume();
+          resolve(r);
+        }).on('error', reject);
+      });
+      const csp = res.headers['content-security-policy'];
+      assert.match(csp, /script-src 'self';/);
+      assert.match(csp, /style-src 'self';/);
+      assert.doesNotMatch(csp, /unsafe-inline/);
     });
 
     it('교사 PC에서는 기록 화면을 내주고, 없어진 QR 경로는 404예요', async () => {

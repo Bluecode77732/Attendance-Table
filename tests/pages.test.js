@@ -84,9 +84,14 @@ async function openTab(cdpPort, url, { width, height, mobile }, errors) {
       pending.delete(msg.id);
     }
     if (msg.method === 'Runtime.exceptionThrown') errors.push(`${url}: ${msg.params.exceptionDetails.exception?.description}`);
+    // CSP가 막은 스크립트·스타일은 예외가 아니라 콘솔 오류로만 나온다. 네트워크 오류(favicon 404, 일부러 낸 400)는 뺀다.
+    if (msg.method === 'Log.entryAdded' && msg.params.entry.level === 'error' && msg.params.entry.source !== 'network') {
+      errors.push(`${url}: ${msg.params.entry.text}`);
+    }
     if (msg.method === 'Page.javascriptDialogOpening') send('Page.handleJavaScriptDialog', { accept: true });
   });
   await send('Runtime.enable');
+  await send('Log.enable');
   await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
   if (mobile) await send('Emulation.setTouchEmulationEnabled', { enabled: true });
@@ -252,5 +257,11 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
 
   it('화면에 스크립트 오류가 없어요', () => {
     assert.deepEqual(errors, []);
+  });
+
+  it('CSP가 HTML 안에 끼워 넣은 스크립트를 실행하지 않아요', async () => {
+    await board.evaluate(`const s = document.createElement('script'); s.textContent = 'window.__inlineRan = true'; document.body.append(s)`);
+    await wait(200);
+    assert.equal(await board.evaluate(`window.__inlineRan === true`), false);
   });
 });

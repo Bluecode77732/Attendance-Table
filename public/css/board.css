@@ -1,0 +1,278 @@
+/* 목적: 교사용 TV 현황판의 모양이에요. */
+/* 사용처: public/index.html이 <link>로 불러요. */
+/* 근거: HTML 안 스타일을 막는 보안 정책(CSP)을 켜려고 index.html에서 옮겼어요(DEC-14). */
+
+:root {
+  --in: #178a48;
+  --absent: #c93c3c;
+  --out: #6b6b6b;
+  --paper: #f4f1ea;
+  --ink: #2b2b2b;
+  --line: #b9b4a8;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+/* TV는 멀리서 보니 rem 기준 글자·여백이 화면 폭에 비례해 커지게 한다 */
+html { font-size: clamp(16px, 1.3vw, 48px); }
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 0.9rem;
+}
+.bar h1 { margin: 0; font-size: 1.1rem; }
+.summary { margin: 0; font-size: 0.95rem; font-weight: 700; }
+.hint { margin: 0; font-size: 0.8rem; opacity: 0.6; }
+.push { margin-left: auto; }
+.tools { display: flex; gap: 0.4rem; }
+
+.btn, .select {
+  height: 2.25rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn { display: inline-flex; align-items: center; text-decoration: none; }
+.btn[hidden] { display: none; }
+.btn.danger { color: var(--absent); }
+.btn:focus-visible, .select:focus-visible { outline: 3px solid #2b6cff; outline-offset: 2px; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+.pager { display: flex; align-items: center; gap: 0.6rem; }
+.pager button {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.pager button:disabled { opacity: 0.35; cursor: default; }
+.pager button:focus-visible { outline: 3px solid #2b6cff; outline-offset: 2px; }
+#page-label { min-width: 3.5em; text-align: center; font-variant-numeric: tabular-nums; }
+
+.grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 0.4rem;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.cell {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  transition: background-color 0.25s ease;
+}
+.cell.in { background: var(--in); }
+.cell.absent { background: var(--absent); }
+.cell.out { background: var(--out); }
+.cell.empty { background: rgba(0, 0, 0, 0.04); }
+
+.toggle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0 0.5em;
+  border: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.toggle:focus-visible { outline: 4px solid #fff; outline-offset: -8px; }
+
+.name {
+  font-size: clamp(2rem, min(5vw, 10vh), 12rem);
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 색만으로 구분하지 않도록 상태를 글자로도 적는다 */
+.status {
+  padding: 0.15em 0.8em;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 번호가 없으면 출석 기기로 출석할 수 없다 — 교사가 빠진 학생을 한눈에 본다 */
+.badge {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.7rem;
+  padding: 0.1em 0.6em;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.actions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.4rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.cell:hover .actions,
+.cell:focus-within .actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.icon.pill { width: auto; padding: 0 0.9rem; border-radius: 999px; font-size: 0.9rem; font-weight: 700; }
+.icon:hover { background: rgba(0, 0, 0, 0.55); }
+.icon:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+.cell.add { border: 3px dashed rgba(0, 0, 0, 0.25); }
+.cell.add .toggle { color: #444; opacity: 0.35; transition: opacity 0.35s ease; }
+.cell.add:hover .toggle,
+.cell.add .toggle:focus-visible { opacity: 1; }
+.cell.add .plus { font-size: 3rem; line-height: 1; }
+.cell.add .label { font-size: 1rem; font-weight: 700; }
+
+.name-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.85);
+  color: #fff;
+  caret-color: #fff;
+  font: inherit;
+  font-size: clamp(2rem, min(5vw, 10vh), 12rem);
+  font-weight: 800;
+  text-align: center;
+}
+
+dialog {
+  width: min(46rem, 90vw);
+  max-height: 88vh;
+  padding: 1.2rem 1.4rem;
+  border: 0;
+  border-radius: 0.8rem;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+dialog::backdrop { background: rgba(20, 20, 20, 0.75); }
+.dialog-title { margin: 0 0 0.8rem; font-size: 1.3rem; font-weight: 800; }
+.dialog-foot { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.row { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; flex-wrap: wrap; }
+.row label { font-weight: 700; }
+.field {
+  height: 2.25rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  font: inherit;
+}
+.note { margin: 0.3rem 0; font-size: 0.85rem; opacity: 0.7; }
+.list { margin: 0.4rem 0; padding: 0; list-style: none; }
+.list li { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; border-bottom: 1px solid #eee; }
+.list li .grow { flex: 1; }
+.checks { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }
+.paste-box {
+  width: 100%;
+  height: 9rem;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  font: inherit;
+  font-size: 0.85rem;
+}
+.preview { max-height: 14rem; overflow: auto; font-size: 0.85rem; }
+.preview h3 { margin: 0.6rem 0 0.2rem; font-size: 0.95rem; }
+.preview p { margin: 0.1rem 0; }
+.device-grid { display: grid; grid-template-columns: 12rem 1fr; gap: 1rem; align-items: start; }
+.qr { display: grid; place-items: center; width: 12rem; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 0.4rem; overflow: hidden; }
+.qr svg { display: block; width: 100%; height: 100%; }
+.url { margin: 0.2rem 0; font-size: 1.1rem; font-weight: 800; word-break: break-all; }
+.code { margin: 0.2rem 0; font-size: 2.6rem; font-weight: 800; letter-spacing: 0.2em; font-variant-numeric: tabular-nums; }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.2rem;
+  z-index: 20;
+  max-width: 80vw;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.6rem;
+  background: rgba(30, 30, 30, 0.92);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  transform: translateX(-50%);
+}
+.toast[hidden] { display: none; }
+
+@keyframes from-right { from { opacity: 0; transform: translateX(48px); } to { opacity: 1; transform: none; } }
+@keyframes from-left { from { opacity: 0; transform: translateX(-48px); } to { opacity: 1; transform: none; } }
+.grid.slide-next { animation: from-right 0.28s ease-out; }
+.grid.slide-prev { animation: from-left 0.28s ease-out; }
+
+/* 마우스가 없는 기기는 hover가 없으니 버튼을 늘 보이게 한다 */
+@media (hover: none) {
+  .actions { opacity: 1; pointer-events: auto; }
+  .cell.add .toggle { opacity: 0.7; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

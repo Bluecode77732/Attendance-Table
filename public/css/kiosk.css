@@ -1,0 +1,99 @@
+/* 목적: 출석 기기(갤럭시) 화면의 모양이에요. */
+/* 사용처: public/kiosk.html이 <link>로 불러요. */
+/* 근거: HTML 안 스타일을 막는 보안 정책(CSP)을 켜려고 kiosk.html에서 옮겼어요(DEC-14). */
+
+:root {
+  --in: #178a48;
+  --out: #6b6b6b;
+  --warn: #b4581c;
+  --paper: #f4f1ea;
+  --ink: #2b2b2b;
+  --key: #ffffff;
+  --key-line: #cfc9bc;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.2rem;
+  text-align: center;
+}
+.screen[hidden] { display: none; }
+
+.title { margin: 0; font-size: 1.6rem; font-weight: 800; }
+.text { margin: 0; font-size: 1.1rem; line-height: 1.5; }
+.sub { margin: 0; font-size: 0.95rem; opacity: 0.65; }
+
+.dots { display: flex; gap: 0.8rem; min-height: 3rem; align-items: center; }
+.dot {
+  width: 2.4rem;
+  height: 3rem;
+  border-bottom: 4px solid var(--key-line);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 3rem;
+}
+.dot.filled { border-color: var(--ink); }
+
+.message { margin: 0; min-height: 1.5em; font-size: 1.05rem; font-weight: 700; color: var(--warn); }
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  width: min(92vw, 26rem);
+}
+.key {
+  height: min(15vw, 5.2rem);
+  border: 1px solid var(--key-line);
+  border-radius: 0.9rem;
+  background: var(--key);
+  color: var(--ink);
+  font: inherit;
+  font-size: 2rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.key:active { background: #e8e3d8; }
+.key.small { font-size: 1.1rem; }
+.key:disabled { opacity: 0.35; }
+
+.choices { display: flex; flex-direction: column; gap: 0.7rem; width: min(92vw, 26rem); }
+.choice, .btn {
+  min-height: 4rem;
+  border: 1px solid var(--key-line);
+  border-radius: 0.9rem;
+  background: var(--key);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.5rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn { min-height: 3.2rem; padding: 0 1.6rem; font-size: 1.1rem; }
+
+#result.in { background: var(--in); color: #fff; }
+#result.out { background: var(--out); color: #fff; }
+#result.warn { background: var(--warn); color: #fff; }
+.big { margin: 0; font-size: clamp(2rem, 9vw, 3.4rem); font-weight: 800; line-height: 1.25; word-break: keep-all; }
+.time { margin: 0; font-size: clamp(1.4rem, 6vw, 2.2rem); font-weight: 700; font-variant-numeric: tabular-nums; }
