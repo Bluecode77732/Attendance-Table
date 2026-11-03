@@ -1,0 +1,140 @@
+// 목적: 저장 동작을 고정해 두는 시험이에요. 재시작, 예전 파일 업그레이드, 손상 파일 격리, 매일 백업, 자정 넘김을 확인해요.
+// 사용처: `node --test "tests/*.test.js"`로 실행해요. 가짜 이름만 쓰고, 임시 폴더의 데이터로 돌아요.
+// 근거: data.json은 학원의 실제 기록이 담기는 곳이라, 구조를 나눌 때 가장 먼저 지켜야 해요(DEC-06, DEC-11).
+
+'use strict';
+
+const { describe, it } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { startServer, clients, setClock, removeDir, makeTempDir, pairDevice } = require('./helpers');
+
+const BACKUP_RE = /^data-\d{4}-\d{2}-\d{2}\.json$/;
+
+// 목적: 저장 큐가 파일에 쓸 시간을 잠깐 기다려요.
+// 이유: 서버는 응답을 먼저 보내고 파일은 큐에서 써요. 곧바로 끄면 Windows에서는 마지막 쓰기를 잃어요(ROADMAP §3).
+// 방법: 짧게 기다려요.
+function settle() {
+  return new Promise((resolve) => setTimeout(resolve, 400));
+}
+
+// 목적: 임시 폴더를 만들어 시험 하나를 돌리고, 성공하든 실패하든 서버와 폴더를 정리해요.
+// 이유: 단언이 실패해도 서버가 남으면 시험 전체가 끝나지 않아요.
+// 방법: body에 폴더와 "서버 띄우기" 함수를 넘겨요. 띄운 서버는 기억해 두었다가 finally에서 모두 꺼요.
+async function withSandbox(body) {
+  const dir = makeTempDir();
+  const running = [];
+  const start = async (options) => {
+    const server = await startServer(options);
+    running.push(server);
+    return server;
+  };
+  try {
+    await body(dir, start);
+  } finally {
+    for (const server of running) await server.stop();
+    removeDir(dir);
+  }
+}
+
+describe('저장', () => {
+  it('재시작해도 학생, 기기, 오늘 기록이 남아요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    let server = await start({ dataFile });
+    let api = clients(server.port);
+    await api.teacher('/api/import/apply', { rows: [['가나다', '01011112222', '']] });
+    const dev = await pairDevice(api);
+    assert.equal((await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev)).json.state, 'in');
+    await settle();
+    await server.stop();
+
+    server = await start({ dataFile });
+    api = clients(server.port);
+    const state = (await api.teacher('/api/state')).json;
+    assert.equal(state.students.length, 1);
+    assert.equal(state.devices.length, 1);
+    assert.equal(state.students[0].status, 'in');
+    assert.equal((await api.kiosk('/api/kiosk/hello', {}, dev)).json.state, 'ready');
+  }));
+
+  it('그날 첫 저장 전에 백업하고, 30개만 남겨요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    const backupDir = path.join(dir, 'backup');
+    let server = await start({ dataFile });
+    await clients(server.port).teacher('/api/add', {});
+    await settle();
+    await server.stop();
+    assert.ok(!fs.existsSync(backupDir) || fs.readdirSync(backupDir).length === 0, '파일이 없던 첫 저장에는 백업이 없어요');
+
+    fs.mkdirSync(backupDir, { recursive: true });
+    for (let i = 1; i <= 35; i++) fs.writeFileSync(path.join(backupDir, `data-2025-01-${String(i).padStart(2, '0')}.json`), '{}');
+    server = await start({ dataFile });
+    await clients(server.port).teacher('/api/add', {});
+    await settle();
+
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const backups = fs.readdirSync(backupDir).filter((n) => BACKUP_RE.test(n)).sort();
+    assert.ok(backups.includes(`data-${today}.json`));
+    assert.equal(backups.length, 30);
+    assert.ok(!backups.includes('data-2025-01-01.json'), '가장 오래된 백업부터 지워요');
+  }));
+
+  it('예전(QR) 형식 파일은 새 형식으로 바꾸고, 원본은 백업에 남겨요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    fs.writeFileSync(dataFile, JSON.stringify({
+      students: [{ id: 3, name: '옛학생', present: true, deviceHash: 'abc' }, { id: 7, name: '옛학생2', present: false, deviceHash: null }],
+      nextId: 8,
+    }));
+    const server = await start({ dataFile });
+    assert.match(server.log(), /새 형식으로 바꿨어요/);
+    const api = clients(server.port);
+    assert.deepEqual((await api.teacher('/api/state')).json.students.map((s) => `${s.id}:${s.name}`), ['3:옛학생', '7:옛학생2']);
+    assert.equal((await api.teacher('/api/add', {})).json.id, 8);
+    await settle();
+
+    const saved = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+    assert.equal(saved.version, 2);
+    assert.equal(saved.students[0].phone, null);
+    assert.ok(!('present' in saved.students[0]));
+    const backup = fs.readdirSync(path.join(dir, 'backup')).find((n) => BACKUP_RE.test(n));
+    assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'backup', backup), 'utf8')).version, undefined);
+  }));
+
+  it('모양이 틀린 파일은 broken으로 옮기고 빈 명단으로 시작해요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    fs.writeFileSync(dataFile, '{"version":2,"students":"nope"}');
+    const server = await start({ dataFile });
+    assert.ok(fs.readdirSync(dir).some((n) => n.startsWith('data.json.broken-')));
+    assert.equal((await clients(server.port).teacher('/api/state')).json.students.length, 0);
+  }));
+
+  it('자정이 지나면 모두 미등원이 되고, 새날 첫 입력은 등원이며 백업이 생겨요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    const clockFile = path.join(dir, 'clock.txt');
+    fs.writeFileSync(clockFile, '0');
+    const server = await start({ dataFile, clockFile });
+    const api = clients(server.port);
+    await api.teacher('/api/import/apply', { rows: [['가나다', '01011112222', '']] });
+    const dev = await pairDevice(api);
+
+    const day1 = await setClock(clockFile, 0, 23, 50);
+    assert.equal((await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev)).json.time, '23:50');
+    await setClock(clockFile, 0, 23, 59);
+    assert.equal((await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev)).json.state, 'already');
+
+    const day2 = await setClock(clockFile, 1, 0, 3);
+    const state = (await api.teacher('/api/state')).json;
+    assert.equal(state.today, day2);
+    assert.ok(state.students.every((s) => s.status === 'absent'));
+    const next = (await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev)).json;
+    assert.equal(next.state, 'in', '자정을 넘긴 간격은 반복으로 보지 않아요');
+    assert.equal(next.time, '00:03');
+
+    const rec = (await api.teacher(`/api/records?month=${day1.slice(0, 7)}`)).json;
+    assert.equal(rec.days[day1]['1'][0].out, null, '전날 방문은 하원 없이 남아요');
+    await settle();
+    assert.ok(fs.existsSync(path.join(dir, 'backup', `data-${day2}.json`)));
+  }));
+});
