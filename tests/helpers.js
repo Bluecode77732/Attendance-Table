@@ -165,4 +165,45 @@ async function pairDevice(api) {
   return (await api.kiosk('/api/kiosk/pair', { code })).cookie;
 }
 
-module.exports = { ROOT, makeTempDir, removeDir, setClock, startServer, request, clients, lanAddress, pairDevice };
+// 목적: 붙여넣기 행 형태([이름, 번호, 반])의 가짜 명단을 만듭니다.
+// 이유: 학원 규모(60명)에서 명단, 출석, 기록, 화면이 버티는지 실제 이름 없이 시험해야 합니다.
+// 방법: 뜻 없는 세 글자 이름을 차례로 짓고, 번호는 뒷 4자리가 겹치지 않게 짓습니다. 형제 둘·셋(같은 번호), 뒷 4자리만 같은 번호, 번호 없는 학생을 일부러 넣습니다. 반은 셋이고 열 명마다 한 명은 두 반에 듭니다.
+function fakeRoster(count) {
+  const syllables = [...'가나다라마바사아자차카타파하'];
+  const classes = ['3시 타임', '5시 타임', '7시 타임'];
+  const rows = [];
+  for (let i = 0; i < count; i++) {
+    const name = syllables[i % 14] + syllables[Math.floor(i / 14) % 14] + syllables[(i * 5 + 3) % 14];
+    const middle = String(2000 + i);
+    const last = String(1000 + ((i * 37) % 9000));
+    const phone = i % 2 === 0 ? `010-${middle}-${last}` : `010${middle}${last}`;
+    const own = classes[i % 3];
+    const cls = i % 10 === 9 ? `${own}, ${classes[(i + 1) % 3]}` : own;
+    rows.push([name, phone, cls]);
+  }
+  const copyPhone = (to, from) => {
+    if (to < count && from < count) rows[to][1] = rows[from][1];
+  };
+  copyPhone(1, 0);
+  copyPhone(30, 29);
+  copyPhone(31, 29);
+  if (count > 45) rows[45][1] = `0109999${rows[44][1].replace(/\D/g, '').slice(-4)}`;
+  if (count > 1) rows[count - 1][1] = '';
+  return rows;
+}
+
+// 목적: 명단 행을 번호 뒷 4자리별로 묶습니다.
+// 이유: 출석 기기 시험이 "바로 등원"할 학생과 "이름을 고를" 학생을 명단에서 직접 계산하게 합니다.
+// 방법: 번호가 있는 행만, 숫자만 남긴 번호의 뒷 4자리를 키로 이름 목록을 모읍니다.
+function groupByLast4(rows) {
+  const groups = new Map();
+  for (const [name, phone] of rows) {
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) continue;
+    const key = digits.slice(-4);
+    groups.set(key, [...(groups.get(key) ?? []), name]);
+  }
+  return groups;
+}
+
+module.exports = { ROOT, makeTempDir, removeDir, setClock, startServer, request, clients, lanAddress, pairDevice, fakeRoster, groupByLast4 };
