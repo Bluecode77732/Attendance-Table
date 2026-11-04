@@ -154,6 +154,11 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     assert.equal(await board.evaluate(`document.querySelectorAll('.cell.add').length`), 1);
   });
 
+  it('입력칸은 크기를 끌어 바꿀 수 없어요', async () => {
+    const resizable = await board.evaluate(`[...document.querySelectorAll('textarea, input, select')].filter((el) => getComputedStyle(el).resize !== 'none').map((el) => el.id)`);
+    assert.deepEqual(resizable, []);
+  });
+
   it('엑셀 형식(CRLF, 줄 번호 칸)을 읽어 휴대폰 칸을 골라요', async () => {
     const text = await paste('번호\t이름\t학교\t학년\t휴대폰 번호\t반\r\n1\t사아자\t가학교\t3\t010-5555-6666\t3시 타임\r\n2\t차카타\t가학교\t4\t01077778888\t7시 타임\r\n');
     assert.match(text, /가져올 칸: 이름, 번호, 반/);
