@@ -401,6 +401,8 @@ describe('화면 — 60명', { skip: BROWSER ? false : 'Chrome이나 Edge가 없
       await wait(300);
       const widths = await rec.evaluate(`({ table: Math.ceil(document.querySelector('table').getBoundingClientRect().width), page: document.documentElement.clientWidth })`);
       assert.ok(widths.table <= widths.page, `표 ${widths.table}px가 인쇄 폭 ${widths.page}px를 넘어요`);
+      await rec.evaluate(`{ const t = document.getElementById('toast'); t.textContent = '저장했어요.'; t.hidden = false; }`);
+      assert.equal(await rec.evaluate(`getComputedStyle(document.getElementById('toast')).display`), 'none', '저장 안내가 인쇄물에 찍혀요');
       const pdf = await rec.send('Page.printToPDF', { preferCSSPageSize: true, printBackground: false });
       const pages = (Buffer.from(pdf.result.data, 'base64').toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length;
       t.diagnostic(`${COUNT}명 한 달 인쇄: ${pages}쪽`);
