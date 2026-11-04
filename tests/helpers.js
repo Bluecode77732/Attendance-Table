@@ -167,13 +167,14 @@ async function pairDevice(api) {
 
 // 목적: 붙여넣기 행 형태([이름, 번호, 반])의 가짜 명단을 만듭니다.
 // 이유: 학원 규모(60명)에서 명단, 출석, 기록, 화면이 버티는지 실제 이름 없이 시험해야 합니다.
-// 방법: 뜻 없는 세 글자 이름을 차례로 짓고, 번호는 뒷 4자리가 겹치지 않게 짓습니다. 형제 둘·셋(같은 번호), 뒷 4자리만 같은 번호, 번호 없는 학생을 일부러 넣습니다. 반은 셋이고 열 명마다 한 명은 두 반에 듭니다.
+// 방법: 뜻 없는 세 글자 이름을 차례로 짓고(2,744명까지 겹치지 않음), 번호는 뒷 4자리가 겹치지 않게 짓습니다. 형제 둘·셋(같은 번호), 뒷 4자리만 같은 번호, 번호 없는 학생을 일부러 넣습니다. 반은 셋이고 열 명마다 한 명은 두 반에 듭니다.
 function fakeRoster(count) {
   const syllables = [...'가나다라마바사아자차카타파하'];
   const classes = ['3시 타임', '5시 타임', '7시 타임'];
   const rows = [];
   for (let i = 0; i < count; i++) {
-    const name = syllables[i % 14] + syllables[Math.floor(i / 14) % 14] + syllables[(i * 5 + 3) % 14];
+    // 앞 두 글자는 196명마다 되풀이되므로, 셋째 글자를 196명마다 한 칸씩 밀어 겹치지 않게 합니다.
+    const name = syllables[i % 14] + syllables[Math.floor(i / 14) % 14] + syllables[(i * 5 + 3 + Math.floor(i / 196)) % 14];
     const middle = String(2000 + i);
     const last = String(1000 + ((i * 37) % 9000));
     const phone = i % 2 === 0 ? `010-${middle}-${last}` : `010${middle}${last}`;

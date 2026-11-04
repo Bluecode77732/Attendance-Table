@@ -58,7 +58,7 @@ function isTeacherRequest(req: IncomingMessage): boolean {
 
 // 목적: 요청 본문을 JSON 객체로 읽습니다.
 // 이유: 모든 쓰기 API가 같은 검증(크기, 타입, 형식)을 받게 합니다.
-// 방법: Content-Type이 application/json이어야 하고(다른 사이트의 폼 전송 차단), 10KB 초과면 413.
+// 방법: Content-Type이 application/json이어야 하고(다른 사이트의 폼 전송 차단), BODY_MAX(64KB) 초과면 413.
 async function readJson(req: IncomingMessage): Promise<Body> {
   const type = (req.headers['content-type'] ?? '').split(';')[0].trim();
   if (type !== 'application/json') throw new HttpError(415, 'JSON 요청만 받습니다.');

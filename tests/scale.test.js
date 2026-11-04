@@ -129,3 +129,41 @@ describe(`${COUNT}명 규모`, () => {
     assert.equal((await api.kiosk('/api/kiosk/hello', {}, device)).json.state, 'ready', '등록한 기기도 그대로예요');
   });
 });
+
+describe('명단 한도 500명', () => {
+  const MAX = 500;
+  let server;
+  let api;
+
+  before(async () => {
+    server = await startServer();
+    api = clients(server.port);
+  });
+
+  after(async () => {
+    await server.stop();
+    removeDir(server.dir);
+  });
+
+  it(`반 이름이 긴 ${MAX}명도 한 번에 붙여넣어요`, async () => {
+    // 학원 반 이름이 길어도 들어가는지 보려고 일부러 긴 반 이름 둘을 붙입니다.
+    const rows = fakeRoster(MAX).map(([name, phone]) => [name, phone, '월수금 4시 타임, 화목 6시 타임']);
+    assert.ok(Buffer.byteLength(JSON.stringify({ rows })) > 30_000, '시험 명단이 충분히 커야 해요');
+    const preview = await api.teacher('/api/import/preview', { rows });
+    assert.equal(preview.status, 200);
+    assert.equal(preview.json.preview.add.length, MAX);
+    const applied = (await api.teacher('/api/import/apply', { rows })).json;
+    assert.equal(applied.students.length, MAX);
+  });
+
+  it(`${MAX}명이 차면 학생 추가와 붙여넣기를 막아요`, async () => {
+    assert.equal((await api.teacher('/api/add', {})).status, 409);
+    assert.equal((await api.teacher('/api/import/preview', { rows: [['새학생', '', '']] })).status, 409);
+  });
+
+  it('요청 크기 상한(64KB)을 넘으면 교사와 출석 기기 요청 모두 413이에요', async () => {
+    const big = { rows: [['가'.repeat(30_000), '', '']] };
+    assert.equal((await api.teacher('/api/import/preview', big)).status, 413);
+    assert.equal((await api.kiosk('/api/kiosk/checkin', big)).status, 413);
+  });
+});

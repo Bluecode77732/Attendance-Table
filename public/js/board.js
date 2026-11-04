@@ -5,7 +5,7 @@
 const PER_PAGE = 8;
 const NAME_MAX = 12;
 const POLL_MS = 2000;
-const PASTE_BYTES_MAX = 9500; // 서버의 요청 크기 한도(10KB) 안에 들어가게 미리 막습니다
+const PASTE_BYTES_MAX = 63_000; // 서버의 요청 크기 한도(64KB) 안에 들어가게 미리 막습니다
 
 const grid = document.getElementById('grid');
 const summaryEl = document.getElementById('summary');

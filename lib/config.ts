@@ -19,11 +19,11 @@ export const DEVICE_COOKIE_MAX_AGE_S = 34_560_000; // 400일. 브라우저가 �
 export const BACKUP_KEEP = 30;
 export const NAME_MAX = 12;
 export const CLASS_NAME_MAX = 20;
-export const MAX_STUDENTS = 200;
+export const MAX_STUDENTS = 500;
 export const MAX_CLASSES = 50;
 export const MAX_DEVICES = 20;
 export const MAX_VISITS_PER_DAY = 10;
-export const BODY_MAX = 10_000;
+export const BODY_MAX = 64_000; // 500명 한 번 붙여넣기(반 이름이 길면 약 40KB)가 들어가는 크기. 끝없는 요청에 메모리가 바닥나지 않게 상한은 둡니다
 
 export const DATE_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 export const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
