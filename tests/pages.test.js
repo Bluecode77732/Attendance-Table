@@ -347,6 +347,19 @@ describe('화면 — 60명', { skip: BROWSER ? false : 'Chrome이나 Edge가 없
     await board.evaluate(`{ const f = document.getElementById('class-filter'); f.value = 'all'; f.dispatchEvent(new Event('change')); }`);
   });
 
+  it('이름을 고치고 Enter로 저장해도 출석은 바뀌지 않아요', async () => {
+    await board.evaluate(`document.querySelector('.cell[data-id] [data-act="edit"]').click()`);
+    const id = Number(await board.evaluate(`document.querySelector('.name-input').closest('.cell').dataset.id`));
+    await board.evaluate(`{ const input = document.querySelector('.name-input'); input.value = '이름바꿈'; input.focus(); }`);
+    // 화면 스크립트가 만든 이벤트가 아니라 실제 키 입력이어야 Enter가 옮겨 간 칸의 버튼까지 누르는지 볼 수 있습니다.
+    await board.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' });
+    await board.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+    await wait(600);
+    const student = (await api.teacher('/api/state')).json.students.find((s) => s.id === id);
+    assert.equal(student.name, '이름바꿈');
+    assert.equal(student.status, 'absent');
+  });
+
   it('번호를 함께 쓰는 형제 셋은 출석 기기에서 이름을 골라 등원해요', async () => {
     const [digits, names] = [...groupByLast4(rows)].find(([, n]) => n.length === 3);
     await board.evaluate(`document.getElementById('open-devices').click(); document.getElementById('pair-start').click()`);

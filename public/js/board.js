@@ -302,7 +302,7 @@ function buildEmptyCell() {
 
 // 목적: 칸 안에서 바로 이름을 고치는 입력창을 만듭니다.
 // 이유: prompt() 창은 큰 글씨 화면 흐름을 끊습니다.
-// 방법: Enter 저장, Esc 취소, 포커스를 잃으면 저장. 한글 조합 중 Enter는 무시합니다.
+// 방법: Enter 저장, Esc 취소, 포커스를 잃으면 저장. 한글 조합 중 Enter는 무시합니다. Enter와 Esc는 기본 동작을 막습니다. 막지 않으면 같은 키가 포커스를 옮겨 받은 출석 버튼까지 눌러 등원으로 기록합니다.
 function buildEditor(student) {
   const input = document.createElement('input');
   input.className = 'name-input';
@@ -312,9 +312,11 @@ function buildEditor(student) {
   input.addEventListener('keydown', (event) => {
     if (event.isComposing) return;
     if (event.key === 'Enter') {
+      event.preventDefault();
       commitEdit(student.id, input.value);
       focusToggle(student.id);
     } else if (event.key === 'Escape') {
+      event.preventDefault();
       cancelEdit(student.id);
       focusToggle(student.id);
     }
