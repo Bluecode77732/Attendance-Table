@@ -159,8 +159,13 @@ body {
   pointer-events: none;
   transition: opacity 0.35s ease;
 }
-.cell:hover .actions,
-.cell:focus-within .actions {
+.cell:hover .actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* 마우스로 누른 뒤에는 포커스가 칸에 남아도 버튼을 숨기고, 키보드로 옮겨 왔을 때(:focus-visible)만 보입니다.
+   :has를 모르는 브라우저가 위 hover 규칙까지 버리지 않도록 따로 둡니다. */
+.cell:has(:focus-visible) .actions {
   opacity: 1;
   pointer-events: auto;
 }

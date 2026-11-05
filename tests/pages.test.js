@@ -441,6 +441,19 @@ describe('화면 — 60명', { skip: BROWSER ? false : 'Chrome이나 Edge가 없
     await board.evaluate(`{ const f = document.getElementById('class-filter'); f.value = 'all'; f.dispatchEvent(new Event('change')); }`);
   });
 
+  it('칸을 마우스로 누른 뒤 치우면 ✎·정보·✕가 숨고, 키보드로 옮겨 오면 보여요', async () => {
+    const box = await board.evaluate(`(() => { const r = document.querySelectorAll('.cell[data-id] .toggle')[7].getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+    // 화면 스크립트의 click()이 아니라 실제 마우스 입력이어야 포커스가 마우스로 생긴 것인지 브라우저가 구분합니다.
+    for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await board.send('Input.dispatchMouseEvent', { type, x: box.x, y: box.y, button: 'left', clickCount: 1 });
+    await board.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 });
+    await wait(600);
+    assert.equal(await board.evaluate(`getComputedStyle(document.querySelectorAll('.cell[data-id] .actions')[7]).opacity`), '0', '마우스를 치웠는데 버튼이 남아요');
+    await board.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+    await board.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+    await wait(600);
+    assert.equal(await board.evaluate(`getComputedStyle(document.activeElement.closest('.cell').querySelector('.actions')).opacity`), '1', '키보드로 옮겨 온 칸에는 버튼이 보여야 해요');
+  });
+
   it('이름을 고치고 Enter로 저장해도 출석은 바뀌지 않아요', async () => {
     await board.evaluate(`document.querySelector('.cell[data-id] [data-act="edit"]').click()`);
     const id = Number(await board.evaluate(`document.querySelector('.name-input').closest('.cell').dataset.id`));
