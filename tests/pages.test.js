@@ -159,6 +159,13 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     assert.deepEqual(resizable, []);
   });
 
+  it('학생 줄 없이 제목 줄만 붙여넣으면 무엇을 다시 할지 알려 줘요', async () => {
+    const text = await paste('이름\t휴대폰\n');
+    assert.match(text, /이름을 찾지 못했습니다/);
+    assert.match(text, /제목 줄과 학생 줄을 함께 골라 복사한 뒤 다시 붙여넣어 주세요/);
+    await board.evaluate(`document.getElementById('paste-dialog').close()`);
+  });
+
   it('엑셀 형식(CRLF, 줄 번호 칸)을 읽어 휴대폰 칸을 골라요', async () => {
     const text = await paste('번호\t이름\t학교\t학년\t휴대폰 번호\t반\r\n1\t사아자\t가학교\t3\t010-5555-6666\t3시 타임\r\n2\t차카타\t가학교\t4\t01077778888\t7시 타임\r\n');
     assert.match(text, /가져올 칸: 이름, 번호, 반/);
@@ -220,7 +227,7 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     // 사아자는 앞 시험에서 현황판으로 등원시켰으니 10분 반복에 걸립니다. 아직 오지 않은 차카타로 시험합니다.
     await press('8888');
     await wait(600);
-    assert.equal(await kiosk.evaluate(`document.getElementById('result-big').textContent`), '차카타님 등원했어요');
+    assert.equal(await kiosk.evaluate(`document.getElementById('result-big').textContent`), '차카타 등원했어요');
     await kiosk.evaluate(`document.getElementById('result').click()`);
     await press('0000');
     await wait(600);
@@ -399,7 +406,7 @@ describe('화면 — 60명', { skip: BROWSER ? false : 'Chrome이나 Edge가 없
     assert.ok(await kiosk.evaluate(`document.documentElement.scrollHeight <= innerHeight`), '이름 셋이 폰 화면에 스크롤 없이 들어가요');
     await kiosk.evaluate(`document.querySelector('#choices .choice').click()`);
     await wait(600);
-    assert.equal(await kiosk.evaluate(`document.getElementById('result-big').textContent`), `${names[0]}님 등원했어요`);
+    assert.equal(await kiosk.evaluate(`document.getElementById('result-big').textContent`), `${names[0]} 등원했어요`);
   });
 
   it('한 달 기록이 찬 기록 화면이 전원을 보여 주고, 인쇄하면 A4 가로 폭에 들어가요', async (t) => {

@@ -139,8 +139,8 @@ function pair(code) {
   send(async () => {
     const data = await api('/api/kiosk/pair', { code });
     if (data.state === 'paired') openEntry('digits', `${data.label}로 등록됐어요.`);
-    else if (data.state === 'wrong') openEntry('pair', '코드가 맞지 않아요. 다시 입력해 주세요.');
-    else if (data.state === 'full') openEntry('pair', '출석 기기를 더 등록할 수 없습니다. 현황판에서 안 쓰는 기기를 지워 주세요.');
+    else if (data.state === 'wrong') openEntry('pair', '코드가 맞지 않습니다. 다시 입력해 주세요.');
+    else if (data.state === 'full') openEntry('pair', "출석 기기를 더 등록할 수 없습니다. 현황판의 '출석 기기' 창에서 안 쓰는 기기를 '등록 취소'해 주세요.");
     else openEntry('pair', '코드가 만료됐습니다. 현황판에서 새 코드를 받아 주세요.');
   });
 }
@@ -152,7 +152,7 @@ function checkin(digits, studentId) {
   send(async () => {
     const data = await api('/api/kiosk/checkin', studentId === null ? { digits } : { digits, studentId });
     if (data.state === 'unpaired') {
-      openEntry('pair', '이 기기의 등록이 취소됐어요. 새 코드로 다시 등록해 주세요.');
+      openEntry('pair', '이 기기의 등록이 취소됐습니다. 새 코드로 다시 등록해 주세요.');
     } else if (data.state === 'choose') {
       showChoices(digits, data.choices);
     } else {
@@ -187,15 +187,15 @@ function showResult(data) {
   resultSub.textContent = '';
   if (data.state === 'in') {
     resultEl.classList.add('in');
-    resultBig.textContent = `${data.name}님 등원했어요`;
+    resultBig.textContent = `${data.name} 등원했어요`;
     resultTime.textContent = data.time;
   } else if (data.state === 'out') {
     resultEl.classList.add('out');
-    resultBig.textContent = `${data.name}님 하원했어요`;
+    resultBig.textContent = `${data.name} 하원했어요`;
     resultTime.textContent = data.time;
   } else if (data.state === 'already') {
     resultEl.classList.add(data.kind === 'out' ? 'out' : 'in');
-    resultBig.textContent = data.kind === 'out' ? `${data.name}님 이미 하원했어요` : `${data.name}님 이미 등원했어요`;
+    resultBig.textContent = data.kind === 'out' ? `${data.name} 이미 하원했어요` : `${data.name} 이미 등원했어요`;
     resultTime.textContent = data.time;
     resultSub.textContent = '10분 뒤에 다시 눌러 주세요.';
   } else {
