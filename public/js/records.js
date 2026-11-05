@@ -94,14 +94,14 @@ function rowsToShow() {
 
 // 목적: 학생 × 날짜 표를 그립니다.
 // 이유: 한 달 출석을 한눈에 보고 인쇄해야 합니다.
-// 방법: 날짜 칸마다 방문을 "등원–하원" 줄로 넣고, 주말과 오늘은 색을 달리합니다. 끝에 출석 일수를 붙입니다. 이름은 textContent로 넣습니다.
+// 방법: 날짜 칸마다 방문을 "등원–하원" 줄로 넣고, 주말과 오늘은 색을 달리합니다. 끝에 출석 일수를 붙입니다. 이름은 textContent로 넣습니다. 인쇄 제목 앞에는 학원 이름이 있으면 붙입니다.
 function render() {
   const [y, m] = month.split('-').map(Number);
   const lastDay = new Date(y, m, 0).getDate();
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const className = classFilter === 'all' ? '전체' : data.classes.find((c) => c.id === classFilter).name;
-  printTitle.textContent = `${y}년 ${m}월 출석 기록 · ${className}`;
+  printTitle.textContent = `${data.academyName ? `${data.academyName} ` : ''}${y}년 ${m}월 출석 기록 · ${className}`;
 
   const rows = rowsToShow();
   if (rows.length === 0) {

@@ -11,7 +11,7 @@ export const DATA_FILE = process.env.DATA_FILE || path.join(ROOT, 'data.json');
 export const BACKUP_DIR = path.join(path.dirname(DATA_FILE), 'backup');
 export const PUBLIC_DIR = path.join(ROOT, 'public');
 
-export const DATA_VERSION = 2;
+export const DATA_VERSION = 3;
 export const REPEAT_WINDOW_MIN = 10; // 직전 입력 후 이 시간 안의 입력은 반복으로 봅니다(두 번 누름 대비)
 export const PAIR_CODE_TTL_MS = 10 * 60_000; // 출석 기기 등록 코드가 유효한 시간
 export const PAIR_MAX_TRIES = 5; // 등록 코드를 이만큼 틀리면 그 코드를 버립니다
@@ -19,6 +19,7 @@ export const DEVICE_COOKIE_MAX_AGE_S = 34_560_000; // 400일. 브라우저가 �
 export const BACKUP_KEEP = 30;
 export const NAME_MAX = 12;
 export const CLASS_NAME_MAX = 20;
+export const ACADEMY_NAME_MAX = 15;
 export const MAX_STUDENTS = 500;
 export const MAX_CLASSES = 50;
 export const MAX_DEVICES = 20;

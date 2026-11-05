@@ -31,7 +31,8 @@ export interface Device {
 export type Records = Record<string, Record<string, Visit[]>>;
 
 export interface Db {
-  version: 2;
+  version: 3;
+  academyName: string; // 비어 있으면 화면에 '출석부'만 보입니다
   classes: ClassInfo[];
   nextClassId: number;
   students: Student[];
@@ -40,6 +41,9 @@ export interface Db {
   nextDeviceId: number;
   records: Records;
 }
+
+// 학원 이름이 없던 버전 2의 data.json
+export type V2Db = Omit<Db, 'version' | 'academyName'> & { version: 2 };
 
 // QR 출석 시절(버전 1)의 data.json
 export interface V1Db {
@@ -77,6 +81,7 @@ export interface ImportPlan {
 export interface TeacherState {
   rev: number;
   today: string;
+  academyName: string;
   students: ({ id: number; name: string; phone: string | null; classIds: number[]; left: boolean } & TodayStatus)[];
   classes: ClassInfo[];
   devices: { id: number; label: string; pairedOn: string }[];
@@ -88,6 +93,7 @@ export interface TeacherState {
 
 export interface MonthRecords {
   month: string;
+  academyName: string;
   students: { id: number; name: string; classIds: number[]; leftOn: string | null }[];
   classes: ClassInfo[];
   days: Records;

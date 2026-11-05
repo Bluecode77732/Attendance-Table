@@ -162,6 +162,7 @@ async function handleTeacher(req: IncomingMessage, res: ServerResponse, url: URL
     case '/api/classes/add': teacher.addClass(body.name); break;
     case '/api/classes/rename': teacher.renameClass(body.id, body.name); break;
     case '/api/classes/delete': teacher.deleteClass(body.id); break;
+    case '/api/academy/rename': teacher.renameAcademy(body.name); break;
     case '/api/import/preview': extra = { preview: teacher.previewImport(body.rows) }; break;
     case '/api/import/apply': extra = { imported: teacher.importRows(body.rows) }; break;
     case '/api/records/edit': teacher.editRecords(body.date, body.id, body.visits); break;
@@ -180,7 +181,7 @@ async function handleTeacher(req: IncomingMessage, res: ServerResponse, url: URL
 
 // 목적: 출석 기기용 API를 처리합니다.
 // 이유: 출석 기기는 로그인이 없고, 등록 때 받은 쿠키로만 구분됩니다(DEC-10).
-// 방법: pair는 등록 코드를 확인하고 쿠키를 발급합니다. hello와 checkin은 등록된 기기여야 하고, 아니면 unpaired를 돌려줍니다. 등록된 기기에는 쿠키를 매번 다시 발급합니다.
+// 방법: pair는 등록 코드를 확인하고 쿠키를 발급합니다. hello와 checkin은 등록된 기기여야 하고, 아니면 unpaired를 돌려줍니다. 등록된 기기에는 쿠키를 매번 다시 발급하고, 위쪽 띠에 쓸 학원 이름을 함께 보냅니다(등록되지 않은 기기에는 보내지 않습니다).
 async function handleKiosk(req: IncomingMessage, res: ServerResponse, pathname: string, now: number): Promise<void> {
   if (req.method !== 'POST') throw new HttpError(405, '허용되지 않는 요청입니다.');
   const body = await readJson(req);
@@ -192,7 +193,7 @@ async function handleKiosk(req: IncomingMessage, res: ServerResponse, pathname: 
       sendJson(res, 200, { state: result.state });
       return;
     }
-    sendJson(res, 200, { state: 'paired', label: result.label }, { 'Set-Cookie': deviceCookie(result.deviceId) });
+    sendJson(res, 200, { state: 'paired', label: result.label, academyName: teacher.academyName() }, { 'Set-Cookie': deviceCookie(result.deviceId) });
     return;
   }
 
@@ -204,11 +205,11 @@ async function handleKiosk(req: IncomingMessage, res: ServerResponse, pathname: 
   const headers = { 'Set-Cookie': deviceCookie(deviceId) };
 
   if (pathname === '/api/kiosk/hello') {
-    sendJson(res, 200, { state: 'ready', label: device.label }, headers);
+    sendJson(res, 200, { state: 'ready', label: device.label, academyName: teacher.academyName() }, headers);
     return;
   }
   if (pathname === '/api/kiosk/checkin') {
-    sendJson(res, 200, kioskCheckin(body.digits, body.studentId, now), headers);
+    sendJson(res, 200, { ...kioskCheckin(body.digits, body.studentId, now), academyName: teacher.academyName() }, headers);
     return;
   }
   throw new HttpError(404, '없는 API입니다.');

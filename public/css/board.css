@@ -55,6 +55,23 @@ body {
 .head-toggle:focus-visible { outline: 3px solid #fff; outline-offset: -3px; }
 .topline { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.6rem 1rem 0; }
 .topline h1 { margin: 0; font-size: 1.5rem; white-space: nowrap; }
+/* 학원 이름은 눌러서 그 자리에서 고칩니다. 비어 있으면 옅은 '학원 이름 넣기'가 보입니다 */
+.academy { margin: 0 0.3em 0 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; opacity: 0.75; cursor: pointer; }
+.academy:hover { text-decoration: underline; }
+.academy.placeholder { opacity: 0.45; }
+.academy:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.academy-input {
+  width: 12em;
+  margin: 0 0.3em 0 0;
+  padding: 0 0.3em;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 0.25rem;
+  outline: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+}
 .clock { margin: 0; font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bar {
   display: flex;

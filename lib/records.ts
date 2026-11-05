@@ -68,6 +68,7 @@ export function monthRecords(month: unknown): MonthRecords {
   }
   return {
     month,
+    academyName: db.academyName,
     students: db.students.map((s) => ({ id: s.id, name: s.name, classIds: [...s.classIds], leftOn: s.leftOn })),
     classes: db.classes.map((c) => ({ id: c.id, name: c.name })),
     days,

@@ -7,7 +7,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { DATA_FILE, BACKUP_DIR, DATA_VERSION, BACKUP_KEEP, DATE_RE, TIME_RE, PHONE_RE, HASH_RE, BACKUP_NAME_RE } from './config.ts';
 import { localDate } from './time.ts';
-import type { Db, V1Db } from './types.ts';
+import type { Db, V1Db, V2Db } from './types.ts';
 
 let db: Db = defaultDb();
 let rev = Date.now(); // 변경 때마다 +1. 재시작해도 줄어들지 않게 시각에서 시작합니다.
@@ -16,7 +16,7 @@ let backupDay: string | null = null; // 오늘 백업을 이미 했는지. 재�
 
 // 목적: 저장된 데이터를 읽어 옵니다. 없으면 빈 명단, 예전 형식이면 새 형식으로 바꾸고, 깨졌으면 파일을 보존한 채 빈 명단으로 시작합니다.
 // 이유: 첫 실행이나 파일 손상에도 서버는 떠야 하고, 손상된 기록을 조용히 덮어써서 잃으면 안 됩니다(DEC-06, DEC-11).
-// 방법: JSON 파싱 후 새 형식 검사 → 예전 형식 검사(맞으면 upgradeV1) 순서로 봅니다. 둘 다 아니면 data.json.broken-<시각>으로 옮기고 경고합니다.
+// 방법: JSON 파싱 후 지금 형식(버전 3) → 버전 2(맞으면 upgradeV2) → 버전 1(맞으면 upgradeV1) 순서로 봅니다. 모두 아니면 data.json.broken-<시각>으로 옮기고 경고합니다.
 function loadDb(): { data: Db; upgraded: boolean } {
   let raw: string;
   try {
@@ -29,6 +29,7 @@ function loadDb(): { data: Db; upgraded: boolean } {
   try {
     const data: unknown = JSON.parse(raw);
     if (isValidDb(data)) return { data, upgraded: false };
+    if (isValidV2(data)) return { data: upgradeV2(data), upgraded: true };
     if (isValidV1(data)) return { data: upgradeV1(data), upgraded: true };
     throw new Error('형식이 올바르지 않습니다');
   } catch (e) {
@@ -45,9 +46,9 @@ function loadDb(): { data: Db; upgraded: boolean } {
 
 // 목적: 처음 실행할 때 쓸 빈 데이터를 만듭니다.
 // 이유: 첫 명단은 스프레드시트에서 붙여넣으니(DEC-12), 지워야 할 예시 학생을 미리 넣어 두지 않습니다.
-// 방법: 새 형식의 빈 목록과 1부터 시작하는 다음 id들.
+// 방법: 새 형식의 빈 목록과 1부터 시작하는 다음 id들. 학원 이름은 빈칸입니다.
 function defaultDb(): Db {
-  return { version: DATA_VERSION, classes: [], nextClassId: 1, students: [], nextId: 1, devices: [], nextDeviceId: 1, records: {} };
+  return { version: DATA_VERSION, academyName: '', classes: [], nextClassId: 1, students: [], nextId: 1, devices: [], nextDeviceId: 1, records: {} };
 }
 
 // 목적: 예전(QR 출석) 형식의 데이터인지 확인합니다.
@@ -69,7 +70,7 @@ function isValidV1(data: unknown): data is V1Db {
 
 // 목적: 예전 형식의 데이터를 새 형식으로 바꿉니다.
 // 이유: 이름과 id는 살리고, QR 출석에만 쓰던 값(present, deviceHash)은 버립니다.
-// 방법: 학생마다 번호·반·퇴원 없이 옮기고, 반·기기·기록은 비워 둡니다. 저장은 부른 쪽에서 한 번 합니다.
+// 방법: 학생마다 번호·반·퇴원 없이 옮기고, 반·기기·기록과 학원 이름은 비워 둡니다. 저장은 부른 쪽에서 한 번 합니다.
 function upgradeV1(old: V1Db): Db {
   return {
     ...defaultDb(),
@@ -78,11 +79,41 @@ function upgradeV1(old: V1Db): Db {
   };
 }
 
-// 목적: 읽어 온 데이터가 새 형식에 맞는지 확인합니다.
+// 목적: 학원 이름이 없던 버전 2의 데이터인지 확인합니다.
+// 이유: 학원 이름 칸을 더하면서 버전을 3으로 올렸습니다(DEC-17). 버전 2 파일과 그 백업도 그대로 열려야 합니다.
+// 방법: 버전 번호가 2이고, 나머지는 지금 형식과 같은 규칙(hasValidBody)으로 검사합니다.
+function isValidV2(data: unknown): data is V2Db {
+  return isPlainObject(data) && data.version === 2 && hasValidBody(data);
+}
+
+// 목적: 버전 2의 데이터를 지금 형식으로 바꿉니다.
+// 이유: 명단·기기·기록은 그대로 두고 학원 이름 칸만 더하면 됩니다.
+// 방법: 필드를 하나씩 옮기고 학원 이름은 빈칸으로 둡니다. 저장은 부른 쪽에서 한 번 합니다.
+function upgradeV2(old: V2Db): Db {
+  return {
+    version: DATA_VERSION,
+    academyName: '',
+    classes: old.classes,
+    nextClassId: old.nextClassId,
+    students: old.students,
+    nextId: old.nextId,
+    devices: old.devices,
+    nextDeviceId: old.nextDeviceId,
+    records: old.records,
+  };
+}
+
+// 목적: 읽어 온 데이터가 지금 형식(버전 3)에 맞는지 확인합니다.
 // 이유: 손으로 고친 파일이 들어와도 서버가 요청 도중에 죽지 않아야 합니다.
-// 방법: 목록마다 id가 겹치지 않고 다음 id보다 작은지, 각 필드의 타입과 날짜·시각 형식이 맞는지 검사합니다.
+// 방법: 버전 번호와 학원 이름이 문자열인지 본 뒤, 나머지는 hasValidBody에 맡깁니다.
 function isValidDb(data: unknown): data is Db {
-  if (!isPlainObject(data) || data.version !== DATA_VERSION) return false;
+  return isPlainObject(data) && data.version === DATA_VERSION && typeof data.academyName === 'string' && hasValidBody(data);
+}
+
+// 목적: 버전 2와 3이 함께 쓰는 부분(반, 학생, 기기, 기록)을 검사합니다.
+// 이유: 두 버전은 학원 이름 칸만 다르니 같은 검사를 두 번 적지 않습니다.
+// 방법: 목록마다 id가 겹치지 않고 다음 id보다 작은지, 각 필드의 타입과 날짜·시각 형식이 맞는지 검사합니다.
+function hasValidBody(data: Record<string, unknown>): boolean {
   if (!Array.isArray(data.classes) || !Array.isArray(data.students) || !Array.isArray(data.devices)) return false;
   if (!hasUniqueIds(data.classes, data.nextClassId, (c) => typeof c.name === 'string')) return false;
   const studentOk = (s: Record<string, unknown>) => typeof s.name === 'string'

@@ -4,6 +4,7 @@
 
 const PER_PAGE = 8;
 const NAME_MAX = 12;
+const ACADEMY_NAME_MAX = 15;
 const POLL_MS = 2000;
 const PASTE_BYTES_MAX = 63_000; // 서버의 요청 크기 한도(64KB) 안에 들어가게 미리 막습니다
 
@@ -14,6 +15,7 @@ const pageLabel = document.getElementById('page-label');
 const prevBtn = document.getElementById('prev');
 const nextBtn = document.getElementById('next');
 const toastEl = document.getElementById('toast');
+const academyBtn = document.getElementById('academy');
 
 const studentDialog = document.getElementById('student-dialog');
 const studentTitle = document.getElementById('student-title');
@@ -43,6 +45,7 @@ let rev = 0;
 let page = 0;
 let classFilter = 'all';
 let editingId = null;
+let academyEditing = false;
 let dialogStudentId = null;
 let slide = '';
 let drawnQrUrl;
@@ -101,10 +104,11 @@ function structureKey(list) {
 
 // 목적: 서버가 준 최신 상태를 화면에 반영합니다.
 // 이유: 폴링 응답과 교사 동작 응답이 모두 이 한 경로로 화면을 갱신해야 서로 어긋나지 않습니다.
-// 방법: 옛 응답(rev가 작음)은 버립니다. 이름 입력 중이면 입력창이 날아가지 않게 학생 목록과 칸 갱신은 건너뜁니다. 구조가 같으면 색만, 다르면 전체를 다시 그립니다. 반 선택과 열린 창은 학생 목록을 바꾼 뒤에 맞춥니다.
+// 방법: 옛 응답(rev가 작음)은 버립니다. 이름 입력 중이면 입력창이 날아가지 않게 학생 목록과 칸 갱신은 건너뜁니다. 구조가 같으면 색만, 다르면 전체를 다시 그립니다. 반 선택과 열린 창은 학생 목록을 바꾼 뒤에 맞춥니다. 학원 이름은 고치는 중이 아니면 바로 맞춥니다.
 function applyState(next) {
   if (next.rev < rev) return;
   state = next;
+  drawAcademy();
   if (editingId === null) {
     rev = next.rev;
     const structural = structureKey(next.students) !== structureKey(students);
@@ -897,6 +901,59 @@ function drawClock() {
   const mm = String(now.getMinutes()).padStart(2, '0');
   document.getElementById('clock').textContent = `${now.getMonth() + 1}월 ${now.getDate()}일(${days[now.getDay()]}) ${hh}:${mm}`;
 }
+
+// 목적: 머리줄의 학원 이름을 최신 상태로 그립니다.
+// 이유: 다른 창이나 원격에서 고친 이름도 폴링으로 맞춰야 합니다. 이름이 없으면 원장이 넣을 자리를 알아야 합니다.
+// 방법: 고치는 중이면 건너뜁니다. 이름이 있으면 그 이름을, 없으면 옅은 '학원 이름 넣기'를 textContent로 넣습니다.
+function drawAcademy() {
+  if (academyEditing || !state) return;
+  const name = state.academyName;
+  academyBtn.textContent = name || '학원 이름 넣기';
+  academyBtn.classList.toggle('placeholder', !name);
+}
+
+// 목적: 학원 이름을 그 자리에서 고치는 입력칸을 엽니다.
+// 이유: 학생 이름 고치기와 같은 방식이라 원장이 따로 배울 것이 없습니다.
+// 방법: 버튼을 입력칸으로 바꿉니다. Enter나 포커스를 잃으면 저장, Esc는 취소이고, 한글 조합 중 Enter는 무시합니다. 끝나면 버튼으로 되돌리고, 이름이 바뀌었을 때만 서버에 보냅니다. 빈칸으로 저장하면 이름을 지웁니다.
+function editAcademy() {
+  academyEditing = true;
+  const input = document.createElement('input');
+  input.className = 'academy-input';
+  input.value = state ? state.academyName : '';
+  input.maxLength = ACADEMY_NAME_MAX;
+  input.placeholder = '학원 이름';
+  input.setAttribute('aria-label', '학원 이름');
+  let done = false;
+  const finish = (save) => {
+    if (done) return;
+    done = true;
+    academyEditing = false;
+    input.replaceWith(academyBtn);
+    const name = input.value.trim();
+    if (save && state && name !== state.academyName) {
+      state.academyName = name;
+      act('/api/academy/rename', { name });
+    }
+    drawAcademy();
+  };
+  input.addEventListener('keydown', (event) => {
+    if (event.isComposing) return;
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      finish(true);
+      academyBtn.focus();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      finish(false);
+      academyBtn.focus();
+    }
+  });
+  input.addEventListener('blur', () => finish(true));
+  academyBtn.replaceWith(input);
+  input.focus();
+  input.select();
+}
+academyBtn.addEventListener('click', editAcademy);
 
 // 목적: 머리줄을 접거나 펼칩니다.
 // 이유: 수업 중에는 버튼이 필요 없으니 머리줄을 접어 학생 칸을 더 크게 보여 줍니다.

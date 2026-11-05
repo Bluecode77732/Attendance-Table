@@ -95,11 +95,56 @@ describe('저장', () => {
     await settle();
 
     const saved = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
-    assert.equal(saved.version, 2);
+    assert.equal(saved.version, 3);
+    assert.equal(saved.academyName, '');
     assert.equal(saved.students[0].phone, null);
     assert.ok(!('present' in saved.students[0]));
     const backup = fs.readdirSync(path.join(dir, 'backup')).find((n) => BACKUP_RE.test(n));
     assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'backup', backup), 'utf8')).version, undefined);
+  }));
+
+  it('버전 2 파일은 학원 이름 빈칸을 더해 버전 3으로 바꾸고, 명단·반·기록은 그대로이며 원본은 백업에 남겨요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    fs.writeFileSync(dataFile, JSON.stringify({
+      version: 2,
+      classes: [{ id: 1, name: '3시 타임' }],
+      nextClassId: 2,
+      students: [{ id: 4, name: '가나다', phone: '01011112222', classIds: [1], leftOn: null }],
+      nextId: 5,
+      devices: [],
+      nextDeviceId: 1,
+      records: { '2026-10-01': { 4: [{ in: '15:00', out: '17:00' }] } },
+    }));
+    let server = await start({ dataFile });
+    assert.match(server.log(), /새 형식으로 바꿨어요/);
+    let api = clients(server.port);
+    const state = (await api.teacher('/api/state')).json;
+    assert.equal(state.academyName, '');
+    assert.deepEqual(state.students.map((s) => `${s.id}:${s.name}:${s.phone}:${s.classIds}`), ['4:가나다:01011112222:1']);
+    assert.deepEqual(state.classes, [{ id: 1, name: '3시 타임' }]);
+    assert.deepEqual((await api.teacher('/api/records?month=2026-10')).json.days, { '2026-10-01': { 4: [{ in: '15:00', out: '17:00' }] } });
+    assert.equal((await api.teacher('/api/add', {})).json.id, 5, '다음 id도 이어져요');
+    assert.equal((await api.teacher('/api/academy/rename', { name: '한빛학원' })).json.academyName, '한빛학원');
+    await settle();
+
+    const saved = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+    assert.equal(saved.version, 3);
+    assert.equal(saved.academyName, '한빛학원');
+    const backup = fs.readdirSync(path.join(dir, 'backup')).find((n) => BACKUP_RE.test(n));
+    assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'backup', backup), 'utf8')).version, 2);
+
+    await server.stop();
+    server = await start({ dataFile });
+    api = clients(server.port);
+    assert.equal((await api.teacher('/api/state')).json.academyName, '한빛학원', '다시 켜도 학원 이름이 남아요');
+  }));
+
+  it('버전 3인데 학원 이름이 문자열이 아니면 broken으로 옮겨요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    fs.writeFileSync(dataFile, JSON.stringify({ version: 3, academyName: 7, classes: [], nextClassId: 1, students: [], nextId: 1, devices: [], nextDeviceId: 1, records: {} }));
+    const server = await start({ dataFile });
+    assert.ok(fs.readdirSync(dir).some((n) => n.startsWith('data.json.broken-')));
+    assert.equal((await clients(server.port).teacher('/api/state')).json.academyName, '');
   }));
 
   it('모양이 틀린 파일은 broken으로 옮기고 빈 명단으로 시작해요', () => withSandbox(async (dir, start) => {

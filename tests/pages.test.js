@@ -196,6 +196,28 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     assert.equal(reopened.label, '▲ 접기');
   });
 
+  it('학원 이름이 없으면 옅은 안내가 보이고, 누르면 그 자리에서 고쳐 Enter로 저장하며 Esc는 취소해요', async () => {
+    assert.equal(await board.evaluate(`document.getElementById('academy').textContent`), '학원 이름 넣기');
+    assert.equal(await board.evaluate(`document.getElementById('academy').classList.contains('placeholder')`), true);
+    // 목적: 학원 이름 입력칸을 열고 값을 넣은 뒤 키 하나를 누릅니다.
+    // 이유: 저장(Enter)과 취소(Esc)를 같은 순서로 시험합니다.
+    // 방법: 버튼을 눌러 입력칸을 열고, 값을 바꾼 뒤 그 입력칸에 keydown을 보냅니다.
+    const type = (value, key) => board.evaluate(`{ document.getElementById('academy').click(); const i = document.querySelector('.academy-input'); i.value = ${JSON.stringify(value)}; i.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(key)}, bubbles: true })); }`);
+    await board.evaluate(`document.getElementById('academy').click()`);
+    assert.equal(await board.evaluate(`document.activeElement.className`), 'academy-input', '누르면 바로 입력할 수 있어요');
+    await board.evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+    assert.equal(await board.evaluate(`document.querySelectorAll('.academy-input').length`), 0, 'Esc로 닫혀요');
+    await type('한빛학원', 'Enter');
+    await wait(600);
+    assert.equal((await api.teacher('/api/state')).json.academyName, '한빛학원');
+    assert.equal(await board.evaluate(`document.getElementById('academy').textContent`), '한빛학원');
+    assert.equal(await board.evaluate(`document.getElementById('academy').classList.contains('placeholder')`), false);
+    await type('다른학원', 'Escape');
+    await wait(600);
+    assert.equal((await api.teacher('/api/state')).json.academyName, '한빛학원', 'Esc는 저장하지 않아요');
+    assert.equal(await board.evaluate(`document.querySelectorAll('.academy-input').length`), 0);
+  });
+
   it('학생 줄 없이 제목 줄만 붙여넣으면 무엇을 다시 할지 알려 줘요', async () => {
     const text = await paste('이름\t휴대폰\n');
     assert.match(text, /이름을 찾지 못했습니다/);
@@ -254,6 +276,8 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     assert.equal(await kiosk.evaluate(`(() => { const r = document.getElementById('result'); const before = r.className; r.className = 'screen out'; const c = getComputedStyle(r).backgroundColor; r.className = before; return c; })()`), 'rgb(201, 60, 60)', '출석 기기의 하원 결과도 빨강이에요');
     await kiosk.go(`http://127.0.0.1:${server.port}/k`);
     assert.equal(await kiosk.evaluate(`document.getElementById('entry-title').textContent`), '출석', '새로고침해도 등록이 남아요');
+    assert.equal(await kiosk.evaluate(`document.getElementById('brand').hidden`), false);
+    assert.equal(await kiosk.evaluate(`document.getElementById('brand').textContent`), '한빛학원 출석', '위쪽 띠에 학원 이름이 보여요');
     assert.ok(await kiosk.evaluate(`document.documentElement.scrollHeight <= innerHeight`), '폰 화면에서 스크롤이 없어요');
     assert.equal(await kiosk.evaluate(`document.getElementById('entry-text').textContent`), '휴대폰번호 뒷 4자리 입력');
     assert.deepEqual(await kiosk.evaluate(`['1', 'clear'].map((k) => getComputedStyle(document.querySelector('.key[data-key="' + k + '"]')).backgroundColor)`), ['rgb(227, 223, 214)', 'rgb(35, 49, 63)'], '숫자 키와 지우기 키는 색이 달라요');
@@ -314,6 +338,7 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     const rec = await openTab(browser.port, `http://localhost:${server.port}/records`, { width: 1600, height: 900, mobile: false }, errors);
     try {
       assert.equal(await rec.evaluate(`document.querySelector('td.day[data-date="${date}"][data-id="${sa.id}"]').textContent`), '15:00–17:0019:00–21:00');
+      assert.match(await rec.evaluate(`document.getElementById('print-title').textContent`), /^한빛학원 \d{4}년 \d{1,2}월 출석 기록 · 전체$/, '인쇄 제목 앞에 학원 이름이 붙어요');
       await rec.evaluate(`document.querySelector('td.day[data-date="${date}"][data-id="${sa.id}"]').click()`);
       assert.equal(await rec.evaluate(`document.getElementById('edit-dialog').open`), true);
       await rec.evaluate(`document.querySelector('#visit-rows [data-role="in"]').value = '18:00'; document.querySelector('#visit-rows [data-role="out"]').value = '17:00'; document.getElementById('edit-save').click()`);

@@ -30,6 +30,10 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 위쪽 남색 띠에 학원 이름을 둡니다. 이름이 없으면 띠도 없습니다 */
+.brand { flex: none; padding: 0.8rem 1rem; background: var(--brand); color: #fff; font-size: 1rem; font-weight: 700; }
+.brand[hidden] { display: none; }
+
 .screen {
   flex: 1;
   display: flex;

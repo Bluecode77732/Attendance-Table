@@ -2,7 +2,7 @@
 // 사용처: lib/http.ts의 교사 API가 경로마다 여기 함수를 하나씩 부릅니다.
 // 근거: 이 동작들이 HTTP 처리(switch) 안에 섞여 있던 것을 server.js를 나누면서 꺼냈습니다(DEC-14). http.ts는 받고 알리기만 합니다.
 
-import { PORT, MAX_STUDENTS, MAX_CLASSES, MAX_VISITS_PER_DAY, CLASS_NAME_MAX, PAGE_CLOSE_GRACE_MS, MAX_OPEN_PAGES, PAGE_ID_RE } from './config.ts';
+import { PORT, MAX_STUDENTS, MAX_CLASSES, MAX_VISITS_PER_DAY, CLASS_NAME_MAX, ACADEMY_NAME_MAX, PAGE_CLOSE_GRACE_MS, MAX_OPEN_PAGES, PAGE_ID_RE } from './config.ts';
 import { conflict, invalid } from './errors.ts';
 import { getDb, getRev, persist } from './store.ts';
 import { localDate } from './time.ts';
@@ -26,6 +26,7 @@ export function teacherState(now: number): TeacherState {
   return {
     rev: getRev(),
     today: localDate(now),
+    academyName: db.academyName,
     students: db.students.map((s) => ({
       id: s.id,
       name: s.name,
@@ -148,6 +149,26 @@ export function renameClass(id: unknown, name: unknown): void {
   if (getDb().classes.some((c) => c.id !== found.id && c.name === clean)) throw conflict('같은 이름의 반이 이미 있습니다.');
   found.name = clean;
   persist();
+}
+
+// 목적: 현황판 머리줄에서 고친 학원 이름을 저장합니다. 빈칸이면 이름을 지웁니다.
+// 이유: 원장이 학원 이름을 직접 넣고 바꿀 수 있어야 합니다(DEC-17).
+// 방법: 제어 문자를 빼고 앞뒤 공백을 지운 뒤 ACADEMY_NAME_MAX자 이내인지 봅니다. 이름이 그대로면 저장하지 않아 같은 요청이 두 번 와도 결과가 같습니다.
+export function renameAcademy(name: unknown): void {
+  if (typeof name !== 'string') throw invalid('학원 이름이 올바르지 않습니다.');
+  const clean = name.replace(/[\u0000-\u001f\u007f]/g, '').trim();
+  if ([...clean].length > ACADEMY_NAME_MAX) throw invalid(`학원 이름은 ${ACADEMY_NAME_MAX}자까지 입력해 주세요.`);
+  const db = getDb();
+  if (db.academyName === clean) return;
+  db.academyName = clean;
+  persist();
+}
+
+// 목적: 저장된 학원 이름을 돌려줍니다.
+// 이유: 출석 기기 위쪽 띠에도 학원 이름을 보여 줍니다. 학원 이름은 숨길 정보가 아니라 등록된 기기에 보내도 됩니다.
+// 방법: 메모리의 db에서 읽기만 합니다.
+export function academyName(): string {
+  return getDb().academyName;
 }
 
 // 목적: 반을 지우고, 모든 학생에게서 그 반을 뺍니다.

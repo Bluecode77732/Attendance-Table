@@ -16,6 +16,7 @@ const resultEl = document.getElementById('result');
 const resultBig = document.getElementById('result-big');
 const resultTime = document.getElementById('result-time');
 const resultSub = document.getElementById('result-sub');
+const brandEl = document.getElementById('brand');
 
 let mode = 'digits';
 let typed = '';
@@ -122,12 +123,22 @@ async function send(request) {
   }
 }
 
+// 목적: 위쪽 띠에 학원 이름을 그립니다.
+// 이유: 학생이 이 기기가 어느 학원 출석부인지 바로 알 수 있게 합니다.
+// 방법: 서버가 이름을 보낸 응답(hello, pair, checkin)마다 맞춥니다. 이름이 없으면 띠를 숨기고, 이름이 없는 옛 서버의 응답이면 그대로 둡니다.
+function drawBrand(data) {
+  if (typeof data.academyName !== 'string') return;
+  brandEl.textContent = data.academyName ? `${data.academyName} 출석` : '';
+  brandEl.hidden = !data.academyName;
+}
+
 // 목적: 처음 열 때 이 기기가 등록돼 있는지 확인합니다.
 // 이유: 등록된 기기면 바로 번호를 받고, 아니면 등록 코드부터 받아야 합니다.
-// 방법: hello를 보내 ready면 번호 입력, unpaired면 등록 코드 입력을 엽니다.
+// 방법: hello를 보내 ready면 번호 입력, unpaired면 등록 코드 입력을 엽니다. 받은 학원 이름으로 위쪽 띠도 맞춥니다.
 function hello() {
   send(async () => {
     const data = await api('/api/kiosk/hello', {});
+    drawBrand(data);
     if (data.state === 'ready') openEntry('digits');
     else openEntry('pair');
   });
@@ -135,10 +146,11 @@ function hello() {
 
 // 목적: 등록 코드를 보내 이 기기를 출석 기기로 등록합니다.
 // 이유: 코드를 본 사람만 출석 기기를 등록할 수 있습니다.
-// 방법: 결과마다 안내를 바꿉니다. paired면 성공 안내를 초록색으로 보여 주며 번호 입력으로 넘어가고.
+// 방법: 결과마다 안내를 바꿉니다. paired면 성공 안내를 초록색으로 보여 주며 번호 입력으로 넘어가고, 학원 이름 띠도 맞춥니다.
 function pair(code) {
   send(async () => {
     const data = await api('/api/kiosk/pair', { code });
+    drawBrand(data);
     if (data.state === 'paired') openEntry('digits', `${data.label}로 등록됐어요.`, true);
     else if (data.state === 'wrong') openEntry('pair', '코드가 맞지 않습니다. 다시 입력해 주세요.');
     else if (data.state === 'full') openEntry('pair', "출석 기기를 더 등록할 수 없습니다. 현황판의 '출석 기기' 창에서 안 쓰는 기기를 '등록 취소'해 주세요.");
@@ -148,10 +160,11 @@ function pair(code) {
 
 // 목적: 번호 뒷 4자리(와 고른 학생)를 보내 출석을 기록합니다.
 // 이유: 서버가 등원·하원·반복을 정하고, 화면은 그 결과만 보여 줍니다.
-// 방법: 상태마다 결과 화면이나 이름 고르기를 보여 줍니다. 기기 등록이 취소됐으면 등록 코드 입력으로 돌아갑니다.
+// 방법: 상태마다 결과 화면이나 이름 고르기를 보여 줍니다. 기기 등록이 취소됐으면 등록 코드 입력으로 돌아갑니다. 응답마다 학원 이름 띠를 맞춰, 현황판에서 고친 이름이 다음 출석부터 보입니다.
 function checkin(digits, studentId) {
   send(async () => {
     const data = await api('/api/kiosk/checkin', studentId === null ? { digits } : { digits, studentId });
+    drawBrand(data);
     if (data.state === 'unpaired') {
       openEntry('pair', '이 기기의 등록이 취소됐습니다. 새 코드로 다시 등록해 주세요.');
     } else if (data.state === 'choose') {

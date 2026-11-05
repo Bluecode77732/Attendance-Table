@@ -241,6 +241,44 @@ describe('서버 API', () => {
     });
   });
 
+  describe('학원 이름', () => {
+    it('처음에는 비어 있고, 고치면 앞뒤 공백을 지우고 저장해요', async () => {
+      assert.equal((await api.teacher('/api/state')).json.academyName, '');
+      const res = await api.teacher('/api/academy/rename', { name: '  한빛\t학원 ' });
+      assert.equal(res.status, 200);
+      assert.equal(res.json.academyName, '한빛학원');
+      assert.equal((await api.teacher('/api/records?month=2026-01')).json.academyName, '한빛학원');
+    });
+
+    it('같은 이름을 다시 보내면 저장하지 않고, 빈칸이면 이름을 지워요', async () => {
+      const before = (await api.teacher('/api/state')).json.rev;
+      assert.equal((await api.teacher('/api/academy/rename', { name: '한빛학원' })).json.rev, before);
+      assert.equal((await api.teacher('/api/academy/rename', { name: '   ' })).json.academyName, '');
+      await api.teacher('/api/academy/rename', { name: '한빛학원' });
+    });
+
+    it('15자를 넘거나 문자열이 아니면 400이고, 교사 PC 밖에서는 403이에요', async () => {
+      assert.equal((await api.teacher('/api/academy/rename', { name: '가'.repeat(15) })).status, 200);
+      assert.equal((await api.teacher('/api/academy/rename', { name: '가'.repeat(16) })).status, 400);
+      assert.equal((await api.teacher('/api/academy/rename', { name: 3 })).status, 400);
+      assert.equal((await api.kiosk('/api/academy/rename', { name: '남의학원' }, dev1)).status, 403);
+      await api.teacher('/api/academy/rename', { name: '한빛학원' });
+    });
+
+    it('등록된 출석 기기에는 hello·checkin에 학원 이름을 보내고, 등록 안 된 기기에는 보내지 않아요', async () => {
+      assert.equal((await api.kiosk('/api/kiosk/hello', {}, dev1)).json.academyName, '한빛학원');
+      assert.equal((await api.kiosk('/api/kiosk/checkin', { digits: '0000' }, dev1)).json.academyName, '한빛학원');
+      const stranger = (await api.kiosk('/api/kiosk/hello', {})).json;
+      assert.equal(stranger.state, 'unpaired');
+      assert.ok(!('academyName' in stranger));
+      const code = (await api.teacher('/api/devices/pair', {})).json.pairing.code;
+      const paired = await api.kiosk('/api/kiosk/pair', { code });
+      assert.equal(paired.json.academyName, '한빛학원');
+      const id = (await api.teacher('/api/state')).json.devices.at(-1).id;
+      await api.teacher('/api/devices/revoke', { id });
+    });
+  });
+
   describe('기기 취소, 퇴원, 삭제, 기록 수정', () => {
     it('등록을 취소한 기기는 다시 unpaired예요', async () => {
       const first = (await api.teacher('/api/state')).json.devices[0];
