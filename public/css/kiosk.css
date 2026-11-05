@@ -41,7 +41,7 @@ body {
 .screen[hidden] { display: none; }
 
 .title { margin: 0; font-size: 1.6rem; font-weight: 800; }
-.text { margin: 0; font-size: 1.1rem; line-height: 1.5; }
+.text { margin: 0; font-size: 1.1rem; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
 .sub { margin: 0; font-size: 0.95rem; opacity: 0.65; }
 
 .dots { display: flex; gap: 0.8rem; min-height: 3rem; align-items: center; }
@@ -56,6 +56,7 @@ body {
 .dot.filled { border-color: var(--ink); }
 
 .message { margin: 0; min-height: 1.5em; font-size: 1.05rem; font-weight: 700; color: var(--warn); }
+.message.ok { color: var(--in); }
 
 .keypad {
   display: grid;
@@ -95,5 +96,5 @@ body {
 #result.in { background: var(--in); color: #fff; }
 #result.out { background: var(--out); color: #fff; }
 #result.warn { background: var(--warn); color: #fff; }
-.big { margin: 0; font-size: clamp(2rem, 9vw, 3.4rem); font-weight: 800; line-height: 1.25; word-break: keep-all; }
+.big { margin: 0; font-size: clamp(2rem, 9vw, 3.4rem); font-weight: 800; line-height: 1.25; word-break: keep-all; overflow-wrap: anywhere; }
 .time { margin: 0; font-size: clamp(1.4rem, 6vw, 2.2rem); font-weight: 700; font-variant-numeric: tabular-nums; }

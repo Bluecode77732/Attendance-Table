@@ -166,6 +166,10 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     await board.evaluate(`document.getElementById('paste-dialog').close()`);
   });
 
+  it('창 안내 문구는 낱말 중간에서 줄을 바꾸지 않아요', async () => {
+    assert.equal(await board.evaluate(`getComputedStyle(document.querySelector('dialog .note')).wordBreak`), 'keep-all');
+  });
+
   it('엑셀 형식(CRLF, 줄 번호 칸)을 읽어 휴대폰 칸을 골라요', async () => {
     const text = await paste('번호\t이름\t학교\t학년\t휴대폰 번호\t반\r\n1\t사아자\t가학교\t3\t010-5555-6666\t3시 타임\r\n2\t차카타\t가학교\t4\t01077778888\t7시 타임\r\n');
     assert.match(text, /가져올 칸: 이름, 번호, 반/);
@@ -209,6 +213,7 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     await kiosk.evaluate(`${JSON.stringify(code)}.split('').forEach((d) => document.querySelector('.key[data-key="' + d + '"]').click())`);
     await wait(600);
     assert.match(await kiosk.evaluate(`document.getElementById('entry-message').textContent`), /등록됐어요/);
+    assert.equal(await kiosk.evaluate(`document.getElementById('entry-message').classList.contains('ok')`), true, '등록 성공 안내는 경고색이 아니에요');
     await kiosk.go(`http://127.0.0.1:${server.port}/k`);
     assert.equal(await kiosk.evaluate(`document.getElementById('entry-title').textContent`), '출석', '새로고침해도 등록이 남아요');
     assert.ok(await kiosk.evaluate(`document.documentElement.scrollHeight <= innerHeight`), '폰 화면에서 스크롤이 없어요');
@@ -249,6 +254,18 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     await board.evaluate(`document.getElementById('left-dialog').close()`);
   });
 
+  it('반 관리에서 Enter로 반을 추가하면 창 안 목록에 바로 나와요', async () => {
+    await board.evaluate(`document.getElementById('open-classes').click()`);
+    await board.evaluate(`{ const input = document.getElementById('class-new'); input.value = '9시 타임'; input.focus(); }`);
+    // 버튼이 아니라 입력칸의 실제 Enter여야, 포커스가 입력칸에 남은 채로 목록이 갱신되는지 볼 수 있습니다.
+    await board.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' });
+    await board.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+    await wait(600);
+    assert.ok(await board.evaluate(`[...document.querySelectorAll('#class-list input')].some((i) => i.value === '9시 타임')`), '창 안 목록에 새 반이 없어요');
+    assert.equal(await board.evaluate(`document.getElementById('class-new').value`), '');
+    await board.evaluate(`document.getElementById('classes-dialog').close()`);
+  });
+
   it('기록 화면이 하루 두 번 방문을 보여 주고, 잘못된 수정은 사유를 보여 줘요', async () => {
     const sa = (await api.teacher('/api/state')).json.students.find((s) => s.name === '사아자');
     const month = (await api.teacher('/api/state')).json.today.slice(0, 7);
@@ -282,6 +299,32 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
       assert.equal(await rec.evaluate(`document.getElementById('toast').textContent`), '최신 기록을 불러왔어요.');
     } finally {
       rec.close();
+    }
+  });
+
+  it('12자 이름도 좁은 폰의 출석 결과 화면에서 잘리지 않아요', async () => {
+    await api.teacher('/api/import/apply', { rows: [['가나다라마바사아자차카타', '01012347777', '']] });
+    const tab = await openTab(browser.port, `http://127.0.0.1:${server.port}/k`, { width: 360, height: 780, mobile: true }, errors);
+    try {
+      await tab.evaluate(`'7777'.split('').forEach((d) => document.querySelector('.key[data-key="' + d + '"]').click())`);
+      await wait(600);
+      assert.equal(await tab.evaluate(`document.getElementById('result-big').textContent`), '가나다라마바사아자차카타 등원했어요');
+      assert.ok(await tab.evaluate(`(() => { const r = document.getElementById('result-big').getBoundingClientRect(); return r.left >= 0 && r.right <= document.documentElement.clientWidth && document.documentElement.scrollWidth <= document.documentElement.clientWidth; })()`), '이름이 좌우로 잘려요');
+    } finally {
+      tab.close();
+    }
+  });
+
+  it('출석 기기 안내 문구는 낱말 중간에서 줄을 바꾸지 않아요', async () => {
+    const tab = await openTab(browser.port, `http://127.0.0.1:${server.port}/k`, { width: 360, height: 780, mobile: true }, errors);
+    try {
+      await tab.evaluate(`'0000'.split('').forEach((d) => document.querySelector('.key[data-key="' + d + '"]').click())`);
+      await wait(600);
+      assert.equal(await tab.evaluate(`document.getElementById('result-big').textContent`), '등록되지 않은 번호예요');
+      assert.equal(await tab.evaluate(`getComputedStyle(document.getElementById('result-sub')).wordBreak`), 'keep-all');
+      assert.ok(await tab.evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), '안내가 화면 밖으로 나가요');
+    } finally {
+      tab.close();
     }
   });
 

@@ -56,8 +56,8 @@ function buildKeypad() {
 
 // 목적: 입력 화면을 등록 코드용이나 번호용으로 엽니다.
 // 이유: 등록되지 않은 기기는 먼저 코드를 입력해야 하고, 등록된 기기는 번호를 받습니다.
-// 방법: mode에 맞는 제목과 안내, 칸 수를 그리고 입력값을 비웁니다.
-function openEntry(nextMode, message) {
+// 방법: mode에 맞는 제목과 안내, 칸 수를 그리고 입력값을 비웁니다. 안내 문구는 실패면 경고색, ok가 true(등록 성공)면 초록색으로 보여 줍니다.
+function openEntry(nextMode, message, ok = false) {
   mode = nextMode;
   typed = '';
   if (mode === 'pair') {
@@ -68,6 +68,7 @@ function openEntry(nextMode, message) {
     entryText.textContent = '휴대폰번호 뒷 4자리를 눌러 주세요.';
   }
   entryMessage.textContent = message ?? '';
+  entryMessage.classList.toggle('ok', ok);
   drawDots();
   show('entry');
 }
@@ -134,11 +135,11 @@ function hello() {
 
 // 목적: 등록 코드를 보내 이 기기를 출석 기기로 등록합니다.
 // 이유: 코드를 본 사람만 출석 기기를 등록할 수 있습니다.
-// 방법: 결과마다 안내를 바꿉니다. paired면 번호 입력으로 넘어갑니다.
+// 방법: 결과마다 안내를 바꿉니다. paired면 성공 안내를 초록색으로 보여 주며 번호 입력으로 넘어갑니다.
 function pair(code) {
   send(async () => {
     const data = await api('/api/kiosk/pair', { code });
-    if (data.state === 'paired') openEntry('digits', `${data.label}로 등록됐어요.`);
+    if (data.state === 'paired') openEntry('digits', `${data.label}로 등록됐어요.`, true);
     else if (data.state === 'wrong') openEntry('pair', '코드가 맞지 않습니다. 다시 입력해 주세요.');
     else if (data.state === 'full') openEntry('pair', "출석 기기를 더 등록할 수 없습니다. 현황판의 '출석 기기' 창에서 안 쓰는 기기를 '등록 취소'해 주세요.");
     else openEntry('pair', '코드가 만료됐습니다. 현황판에서 새 코드를 받아 주세요.');

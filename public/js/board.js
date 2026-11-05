@@ -555,10 +555,12 @@ function onClassListClick(event) {
 
 // 목적: 새 반을 만듭니다.
 // 이유: 타임(반)별로 현황판과 기록을 나눠 봐야 합니다.
-// 방법: 입력한 이름을 보내고, 성공하면 입력칸을 비웁니다.
+// 방법: 입력한 이름을 보내고, 성공하면 입력칸을 비우고 목록을 바로 다시 그립니다. Enter로 추가하면 포커스가 입력칸에 남아 refreshDialogs가 목록을 건너뛰기 때문입니다.
 async function addClass() {
   const data = await act('/api/classes/add', { name: classNewInput.value });
-  if (data) classNewInput.value = '';
+  if (!data) return;
+  classNewInput.value = '';
+  drawClassList();
 }
 
 // 목적: 퇴원생 창의 목록을 그립니다.
