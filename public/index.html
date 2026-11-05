@@ -16,7 +16,6 @@
     <h1>출석부</h1>
     <p id="summary" class="summary"></p>
     <select id="class-filter" class="select" aria-label="반 선택"></select>
-    <p class="hint">← → 페이지</p>
     <div class="tools push">
       <button id="open-paste" class="btn" type="button">명단 붙여넣기</button>
       <button id="open-classes" class="btn" type="button">반 관리</button>
@@ -68,7 +67,7 @@
 
   <dialog id="paste-dialog" aria-labelledby="paste-title">
     <p id="paste-title" class="dialog-title">명단 붙여넣기</p>
-    <p class="note">구글 스프레드시트나 엑셀에서 제목 줄까지 함께 복사해 붙여넣어 주세요. '이름' 칸은 꼭 있어야 하고, '번호'나 '휴대폰', '반'이나 '타임' 칸이 있으면 같이 가져와요. 다른 칸은 무시해요.</p>
+    <p class="note">구글 스프레드시트나 엑셀에서 Ctrl + A로 전체를 선택하고 Ctrl + C로 복사한 뒤, 아래 칸에 Ctrl + V로 붙여넣어 주세요. '이름' 칸은 꼭 있어야 하고, '번호'나 '휴대폰', '반'이나 '타임' 칸이 있으면 같이 가져와요. 다른 칸은 무시해요.</p>
     <textarea id="paste-box" class="paste-box" aria-label="붙여넣을 명단"></textarea>
     <div id="paste-preview" class="preview"></div>
     <div class="dialog-foot">

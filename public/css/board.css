@@ -37,7 +37,6 @@ body {
 }
 .bar h1 { margin: 0; font-size: 1.1rem; }
 .summary { margin: 0; font-size: 0.95rem; font-weight: 700; }
-.hint { margin: 0; font-size: 0.8rem; opacity: 0.6; }
 .push { margin-left: auto; }
 .tools { display: flex; gap: 0.4rem; }
 

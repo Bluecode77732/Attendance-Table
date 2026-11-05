@@ -167,7 +167,7 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
   it('학생 줄 없이 제목 줄만 붙여넣으면 무엇을 다시 할지 알려 줘요', async () => {
     const text = await paste('이름\t휴대폰\n');
     assert.match(text, /이름을 찾지 못했습니다/);
-    assert.match(text, /제목 줄과 학생 줄을 함께 골라 복사한 뒤 다시 붙여넣어 주세요/);
+    assert.match(text, /Ctrl \+ A로 전체를 선택하고 Ctrl \+ C로 복사한 뒤, 다시 Ctrl \+ V로 붙여넣어 주세요/);
     await board.evaluate(`document.getElementById('paste-dialog').close()`);
   });
 

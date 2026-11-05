@@ -672,7 +672,7 @@ async function checkPaste() {
   const parsed = parsePaste(pasteBox.value);
   if (parsed.rows.length === 0) {
     addPreviewLine('붙여넣은 명단에서 이름을 찾지 못했습니다.');
-    addPreviewLine('스프레드시트에서 제목 줄과 학생 줄을 함께 골라 복사한 뒤 다시 붙여넣어 주세요.');
+    addPreviewLine('스프레드시트에서 Ctrl + A로 전체를 선택하고 Ctrl + C로 복사한 뒤, 다시 Ctrl + V로 붙여넣어 주세요.');
     return;
   }
   if (new Blob([JSON.stringify({ rows: parsed.rows })]).size > PASTE_BYTES_MAX) {
