@@ -260,6 +260,24 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     }
   });
 
+  it('기록 화면을 연 뒤 추가한 학생은 새로고침 버튼을 누르면 나와요', async () => {
+    const rec = await openTab(browser.port, `http://localhost:${server.port}/records`, { width: 1600, height: 900, mobile: false }, errors);
+    try {
+      const before = await rec.evaluate(`document.querySelectorAll('tbody tr').length`);
+      const added = (await api.teacher('/api/add', {})).json;
+      const name = added.students.find((s) => s.id === added.id).name;
+      await wait(500);
+      assert.equal(await rec.evaluate(`document.querySelectorAll('tbody tr').length`), before, '새로고침 전에는 그대로예요');
+      await rec.evaluate(`document.getElementById('refresh').click()`);
+      await wait(500);
+      assert.equal(await rec.evaluate(`document.querySelectorAll('tbody tr').length`), before + 1);
+      assert.ok(await rec.evaluate(`[...document.querySelectorAll('td.name')].some((td) => td.textContent.includes(${JSON.stringify(name)}))`), '추가한 학생 이름');
+      assert.equal(await rec.evaluate(`document.getElementById('toast').textContent`), '최신 기록을 불러왔어요.');
+    } finally {
+      rec.close();
+    }
+  });
+
   it('화면에 스크립트 오류가 없어요', () => {
     assert.deepEqual(errors, []);
   });

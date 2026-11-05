@@ -51,7 +51,7 @@ function shiftMonth(delta) {
 
 // 목적: 한 달치 기록을 서버에서 받아 표를 그립니다.
 // 이유: 다른 달로 옮기거나 시각을 고친 뒤 최신 기록을 보여 줘야 합니다.
-// 방법: /api/records?month= 를 불러 data에 두고 반 선택과 표를 다시 그립니다.
+// 방법: /api/records?month= 를 불러 data에 두고 반 선택과 표를 다시 그립니다. 불러왔는지를 true/false로 돌려줍니다.
 async function load() {
   const [y, m] = month.split('-').map(Number);
   monthLabel.textContent = `${y}년 ${m}월`;
@@ -59,10 +59,18 @@ async function load() {
     data = await api(`/api/records?month=${month}`);
   } catch (e) {
     showToast(e.message);
-    return;
+    return false;
   }
   updateClassFilter();
   render();
+  return true;
+}
+
+// 목적: 기록 화면을 서버의 최신 상태로 다시 불러옵니다.
+// 이유: 기록 화면은 열 때만 불러와서, 그 뒤에 현황판에서 추가한 학생이나 새 출석이 보이지 않습니다. 원격 데스크톱으로 보는 휴대폰에서는 브라우저 새로고침을 누르기 어렵습니다.
+// 방법: 보고 있는 달과 반은 그대로 두고 load를 다시 부릅니다. 불러오면 안내를 띄우고, 실패 안내는 load가 띄웁니다.
+async function refresh() {
+  if (await load()) showToast('최신 기록을 불러왔어요.');
 }
 
 // 목적: 반 선택 목록을 서버의 반 목록에 맞춥니다.
@@ -236,6 +244,7 @@ classFilterEl.addEventListener('change', () => {
   classFilter = classFilterEl.value === 'all' ? 'all' : Number(classFilterEl.value);
   render();
 });
+document.getElementById('refresh').addEventListener('click', refresh);
 document.getElementById('print').addEventListener('click', () => window.print());
 wrap.addEventListener('click', (event) => {
   const cell = event.target.closest('td.day');
