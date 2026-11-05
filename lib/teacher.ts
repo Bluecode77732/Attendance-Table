@@ -2,8 +2,8 @@
 // 사용처: lib/http.ts의 교사 API가 경로마다 여기 함수를 하나씩 부릅니다.
 // 근거: 이 동작들이 HTTP 처리(switch) 안에 섞여 있던 것을 server.js를 나누면서 꺼냈습니다(DEC-14). http.ts는 받고 알리기만 합니다.
 
-import { PORT, MAX_STUDENTS, MAX_CLASSES, MAX_VISITS_PER_DAY, CLASS_NAME_MAX } from './config.ts';
-import { conflict } from './errors.ts';
+import { PORT, MAX_STUDENTS, MAX_CLASSES, MAX_VISITS_PER_DAY, CLASS_NAME_MAX, PAGE_CLOSE_GRACE_MS, MAX_OPEN_PAGES, PAGE_ID_RE } from './config.ts';
+import { conflict, invalid } from './errors.ts';
 import { getDb, getRev, persist } from './store.ts';
 import { localDate } from './time.ts';
 import * as roster from './roster.ts';
@@ -168,4 +168,49 @@ export function importRows(rows: unknown): { added: number; exists: number; bad:
   const plan = roster.planImport(rows);
   roster.applyImport(plan);
   return { added: plan.add.length, exists: plan.exists.length, bad: plan.bad.length };
+}
+
+// 열려 있는 교사 화면(현황판, 기록)은 메모리에만 둡니다. 다시 켜면 비어 있고, 화면이 열리면서 다시 알립니다.
+const openPages = new Set<string>();
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
+let onAllClosed: (() => void) | null = null;
+
+// 목적: 교사 화면이 모두 닫혔을 때 부를 함수를 정합니다.
+// 이유: 서버를 끄는 일(연결 닫기, 저장 마치기)은 server.ts가 맡고, 여기서는 언제 끌지만 정합니다(DEC-16).
+// 방법: 함수 하나를 기억해 둡니다.
+export function onAllPagesClosed(handler: () => void): void {
+  onAllClosed = handler;
+}
+
+// 목적: 화면이 보낸 id를 확인합니다.
+// 이유: 아무 값이나 모음에 넣으면 메모리를 차지하고 다른 화면과 섞입니다.
+// 방법: 32자리 16진수가 아니면 "잘못된 입력"입니다.
+function cleanPageId(value: unknown): string {
+  if (typeof value !== 'string' || !PAGE_ID_RE.test(value)) throw invalid('화면 id가 올바르지 않습니다.');
+  return value;
+}
+
+// 목적: 교사 화면 하나가 열렸다고 기록합니다.
+// 이유: 새로고침은 닫힘 바로 뒤에 열림이 오므로, 그사이 예약된 종료를 취소해야 합니다.
+// 방법: id를 모음에 넣고 예약된 종료를 지웁니다. 같은 id가 두 번 와도 한 번으로 셉니다. 모음은 MAX_OPEN_PAGES까지만 받습니다.
+export function pageOpen(pageId: unknown): void {
+  const id = cleanPageId(pageId);
+  if (!openPages.has(id) && openPages.size >= MAX_OPEN_PAGES) throw conflict('열린 교사 화면이 너무 많습니다. 안 쓰는 창을 닫아 주세요.');
+  openPages.add(id);
+  if (closeTimer) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+}
+
+// 목적: 교사 화면 하나가 닫혔다고 기록하고, 모두 닫혔으면 잠시 뒤 종료를 예약합니다.
+// 이유: 브라우저를 닫으면 출석부와 검은 창까지 꺼져야 합니다. 새로고침으로 꺼지지 않게 PAGE_CLOSE_GRACE_MS만큼 기다립니다(DEC-16).
+// 방법: 모음에서 빼고, 비었으면 타이머를 겁니다. 시간이 지나도 비어 있으면 onAllPagesClosed로 정한 함수를 부릅니다. 같은 닫힘이 두 번 와도 타이머는 하나입니다.
+export function pageClose(pageId: unknown): void {
+  openPages.delete(cleanPageId(pageId));
+  if (openPages.size > 0 || closeTimer) return;
+  closeTimer = setTimeout(() => {
+    closeTimer = null;
+    if (openPages.size === 0 && onAllClosed) onAllClosed();
+  }, PAGE_CLOSE_GRACE_MS);
 }

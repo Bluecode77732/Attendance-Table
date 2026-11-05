@@ -891,3 +891,4 @@ document.addEventListener('keydown', onKeydown);
 render();
 poll();
 setInterval(poll, POLL_MS);
+announcePage();

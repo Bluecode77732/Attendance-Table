@@ -262,3 +262,4 @@ document.getElementById('edit-save').addEventListener('click', saveEdit);
 document.getElementById('edit-cancel').addEventListener('click', () => editDialog.close());
 
 load();
+announcePage();

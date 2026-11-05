@@ -9,6 +9,7 @@ import { PORT } from './lib/config.ts';
 import { openStore, flush } from './lib/store.ts';
 import { lanAddresses } from './lib/network.ts';
 import { onRequest } from './lib/http.ts';
+import { onAllPagesClosed } from './lib/teacher.ts';
 
 // 목적: TV용 화면을 기본 브라우저로 자동으로 엽니다.
 // 이유: 교사가 주소를 직접 치지 않고 시작 파일만 더블클릭하게 합니다.
@@ -50,7 +51,7 @@ server.listen(PORT, '0.0.0.0', () => {
   openBrowser(`http://localhost:${PORT}`);
 });
 
-// 목적: 종료 신호를 받으면 쓰던 저장을 마치고 끕니다.
+// 목적: 종료 신호를 받거나 교사 화면이 모두 닫히면(DEC-16) 쓰던 저장을 마치고 끕니다.
 // 이유: 마지막 출석 체크가 파일에 쓰이기 전에 프로세스가 죽으면 그 기록을 잃습니다.
 // 방법: 새 연결을 닫고, 진행 중인 저장 큐가 비면 종료합니다.
 function shutdown(): void {
@@ -58,4 +59,8 @@ function shutdown(): void {
   flush().finally(() => process.exit(0));
 }
 process.on('SIGINT', shutdown);
+onAllPagesClosed(() => {
+  console.log('교사 화면이 모두 닫혀 출석부를 끕니다.');
+  shutdown();
+});
 process.on('SIGTERM', shutdown);

@@ -138,3 +138,46 @@ describe('저장', () => {
     assert.ok(fs.existsSync(path.join(dir, 'backup', `data-${day2}.json`)));
   }));
 });
+
+
+describe('교사 화면을 모두 닫으면', () => {
+  // 목적: 시험용 화면 id를 만듭니다. 이유: 서버는 32자리 16진수만 받습니다. 방법: 한 글자를 32번 되풀이합니다.
+  const pageId = (c) => c.repeat(32);
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  it('5초 뒤 저장을 마치고 꺼지고, 다시 켜면 그대로예요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    const server = await start({ dataFile });
+    const api = clients(server.port);
+    await api.teacher('/api/import/apply', { rows: [['가나다', '01011112222', '']] });
+    await api.teacher('/api/page/open', { pageId: pageId('a') });
+    await api.teacher('/api/page/close', { pageId: pageId('a') });
+    await wait(3000);
+    assert.equal((await api.teacher('/api/state')).status, 200, '5초가 지나기 전에는 켜져 있어요');
+    await wait(3500);
+    await assert.rejects(api.teacher('/api/state'), '5초 뒤에는 꺼져 있어야 해요');
+    assert.match(server.log(), /교사 화면이 모두 닫혀 출석부를 끕니다/);
+    const again = await start({ dataFile });
+    assert.equal((await clients(again.port).teacher('/api/state')).json.students.length, 1);
+  }));
+
+  it('닫힌 뒤 5초 안에 다시 열리면(새로고침) 꺼지지 않고, 다른 화면이 남아 있어도 꺼지지 않아요', () => withSandbox(async (dir, start) => {
+    const server = await start({ dataFile: path.join(dir, 'data.json') });
+    const api = clients(server.port);
+    await api.teacher('/api/page/open', { pageId: pageId('a') });
+    await api.teacher('/api/page/close', { pageId: pageId('a') });
+    await wait(500);
+    await api.teacher('/api/page/open', { pageId: pageId('b') });
+    await api.teacher('/api/page/open', { pageId: pageId('c') });
+    await api.teacher('/api/page/close', { pageId: pageId('b') });
+    await wait(6500);
+    assert.equal((await api.teacher('/api/state')).status, 200);
+  }));
+
+  it('화면 id가 틀리면 400이고, 출석 기기 쪽에서는 쓸 수 없어요(403)', () => withSandbox(async (dir, start) => {
+    const server = await start({ dataFile: path.join(dir, 'data.json') });
+    const api = clients(server.port);
+    assert.equal((await api.teacher('/api/page/open', { pageId: 'abc' })).status, 400);
+    assert.equal((await api.kiosk('/api/page/close', { pageId: pageId('a') })).status, 403);
+  }));
+});

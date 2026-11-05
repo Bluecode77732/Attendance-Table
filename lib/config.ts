@@ -23,6 +23,8 @@ export const MAX_STUDENTS = 500;
 export const MAX_CLASSES = 50;
 export const MAX_DEVICES = 20;
 export const MAX_VISITS_PER_DAY = 10;
+export const PAGE_CLOSE_GRACE_MS = 5_000; // 교사 화면이 모두 닫힌 뒤 이만큼 기다렸다가 끕니다. 새로고침으로 꺼지지 않게 하는 여유입니다(DEC-16)
+export const MAX_OPEN_PAGES = 50;
 export const BODY_MAX = 64_000; // 500명 한 번 붙여넣기(반 이름이 길면 약 40KB)가 들어가는 크기. 끝없는 요청에 메모리가 바닥나지 않게 상한은 둡니다
 
 export const DATE_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
@@ -30,4 +32,5 @@ export const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 export const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const PHONE_RE = /^\d{9,11}$/;
 export const HASH_RE = /^[0-9a-f]{64}$/;
+export const PAGE_ID_RE = /^[0-9a-f]{32}$/;
 export const BACKUP_NAME_RE = /^data-\d{4}-\d{2}-\d{2}\.json$/;

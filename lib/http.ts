@@ -169,6 +169,8 @@ async function handleTeacher(req: IncomingMessage, res: ServerResponse, url: URL
     case '/api/devices/cancel': teacher.closePairing(); break;
     case '/api/devices/revoke': teacher.revokeDevice(body.id); break;
     case '/api/address/next': teacher.nextAddress(); break;
+    case '/api/page/open': teacher.pageOpen(body.pageId); break;
+    case '/api/page/close': teacher.pageClose(body.pageId); break;
     default:
       throw new HttpError(404, '없는 API입니다.');
   }

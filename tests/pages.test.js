@@ -536,3 +536,48 @@ describe('화면 — 60명', { skip: BROWSER ? false : 'Chrome이나 Edge가 없
     assert.deepEqual(errors, []);
   });
 });
+
+
+describe('화면 — 브라우저를 닫으면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' }, () => {
+  let server;
+  let browser;
+  let profileDir;
+  const errors = [];
+
+  before(async () => {
+    server = await startServer();
+    profileDir = makeTempDir();
+    browser = await startBrowser(profileDir);
+  });
+
+  after(async () => {
+    if (browser) {
+      browser.child.kill();
+      await wait(500);
+    }
+    await server.stop();
+    removeDir(server.dir);
+    try {
+      removeDir(profileDir);
+    } catch {
+      // 브라우저가 프로필 파일을 늦게 놓을 때가 있습니다. 임시 폴더라 남아도 해가 없습니다.
+    }
+  });
+
+  it('새로고침으로는 꺼지지 않고, 현황판을 닫으면 5초 뒤 출석부가 꺼져요', async () => {
+    const api = clients(server.port);
+    const tab = await openTab(browser.port, `http://localhost:${server.port}/`, { width: 1600, height: 900, mobile: false }, errors);
+    try {
+      await tab.go(`http://localhost:${server.port}/`);
+      await wait(6500);
+      assert.equal((await api.teacher('/api/state')).status, 200, '새로고침 뒤에도 켜져 있어요');
+      await tab.go('about:blank');
+      await wait(6500);
+      await assert.rejects(api.teacher('/api/state'), '화면을 닫으면 꺼져야 해요');
+      assert.match(server.log(), /교사 화면이 모두 닫혀 출석부를 끕니다/);
+      assert.deepEqual(errors, []);
+    } finally {
+      tab.close();
+    }
+  });
+});
