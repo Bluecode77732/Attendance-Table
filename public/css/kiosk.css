@@ -98,3 +98,21 @@ body {
 #result.warn { background: var(--warn); color: #fff; }
 .big { margin: 0; font-size: clamp(2rem, 9vw, 3.4rem); font-weight: 800; line-height: 1.25; word-break: keep-all; overflow-wrap: anywhere; }
 .time { margin: 0; font-size: clamp(1.4rem, 6vw, 2.2rem); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* 기기를 가로로 눕히면 높이가 모자라 위쪽이 잘립니다. 안내는 왼쪽, 키패드는 오른쪽에 두고, 이름 고르기는 옆으로 늘어놓습니다 */
+@media (orientation: landscape) and (max-height: 600px) {
+  #entry:not([hidden]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: repeat(4, auto);
+    align-content: center;
+    justify-items: center;
+    column-gap: 1.5rem;
+    row-gap: 0.8rem;
+  }
+  #entry > :not(.keypad) { grid-column: 1; }
+  #entry .keypad { grid-column: 2; grid-row: 1 / span 4; width: min(100%, 26rem); }
+  .key { height: min(17dvh, 5.2rem); }
+  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); width: min(92vw, 40rem); }
+  .choice { min-height: 3.4rem; }
+}

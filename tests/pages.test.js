@@ -302,6 +302,26 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     }
   });
 
+  it('출석 기기를 가로로 눕혀도 번호 입력과 이름 고르기가 잘리지 않아요', async () => {
+    // 목적: 지금 보이는 화면의 맨 위와 맨 아래가 화면 안에 있는지 잽니다.
+    // 이유: 가로에서는 높이가 모자라 가운데 정렬된 화면의 위쪽이 잘렸습니다.
+    // 방법: 보이는 화면 안 요소들의 위끝 최솟값과 아래끝 최댓값을 창 높이와 비교합니다.
+    const fits = (tab) => tab.evaluate(`(() => { const els = [...document.querySelector('.screen:not([hidden])').querySelectorAll('*')].filter((el) => el.getClientRects().length); const top = Math.min(...els.map((el) => el.getBoundingClientRect().top)); const bottom = Math.max(...els.map((el) => el.getBoundingClientRect().bottom)); return top >= 0 && bottom <= innerHeight; })()`);
+    const tab = await openTab(browser.port, `http://127.0.0.1:${server.port}/k`, { width: 740, height: 360, mobile: true }, errors);
+    try {
+      assert.equal(await tab.evaluate(`document.getElementById('entry-title').textContent`), '출석');
+      assert.ok(await fits(tab), '번호 입력 화면이 잘려요');
+      await api.teacher('/api/import/apply', { rows: [['형가', '01012349999', ''], ['형나', '01012349999', ''], ['형다', '01012349999', '']] });
+      await tab.evaluate(`'9999'.split('').forEach((d) => document.querySelector('.key[data-key="' + d + '"]').click())`);
+      await wait(600);
+      assert.equal(await tab.evaluate(`document.querySelectorAll('#choices .choice').length`), 3);
+      assert.ok(await fits(tab), '이름 고르기 화면이 잘려요');
+      await tab.evaluate(`document.getElementById('choose-cancel').click()`);
+    } finally {
+      tab.close();
+    }
+  });
+
   it('12자 이름도 좁은 폰의 출석 결과 화면에서 잘리지 않아요', async () => {
     await api.teacher('/api/import/apply', { rows: [['가나다라마바사아자차카타', '01012347777', '']] });
     const tab = await openTab(browser.port, `http://127.0.0.1:${server.port}/k`, { width: 360, height: 780, mobile: true }, errors);
