@@ -159,6 +159,11 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     assert.deepEqual(resizable, []);
   });
 
+  it('칸 색은 미등원 회색, 등원 초록, 하원 빨강이에요', async () => {
+    const colours = await board.evaluate(`['absent', 'in', 'out'].map((k) => { const d = document.createElement('div'); d.className = 'cell ' + k; document.body.append(d); const c = getComputedStyle(d).backgroundColor; d.remove(); return c; })`);
+    assert.deepEqual(colours, ['rgb(107, 107, 107)', 'rgb(23, 138, 72)', 'rgb(201, 60, 60)']);
+  });
+
   it('학생 줄 없이 제목 줄만 붙여넣으면 무엇을 다시 할지 알려 줘요', async () => {
     const text = await paste('이름\t휴대폰\n');
     assert.match(text, /이름을 찾지 못했습니다/);
@@ -214,6 +219,7 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     await wait(600);
     assert.match(await kiosk.evaluate(`document.getElementById('entry-message').textContent`), /등록됐어요/);
     assert.equal(await kiosk.evaluate(`document.getElementById('entry-message').classList.contains('ok')`), true, '등록 성공 안내는 경고색이 아니에요');
+    assert.equal(await kiosk.evaluate(`(() => { const r = document.getElementById('result'); const before = r.className; r.className = 'screen out'; const c = getComputedStyle(r).backgroundColor; r.className = before; return c; })()`), 'rgb(201, 60, 60)', '출석 기기의 하원 결과도 빨강이에요');
     await kiosk.go(`http://127.0.0.1:${server.port}/k`);
     assert.equal(await kiosk.evaluate(`document.getElementById('entry-title').textContent`), '출석', '새로고침해도 등록이 남아요');
     assert.ok(await kiosk.evaluate(`document.documentElement.scrollHeight <= innerHeight`), '폰 화면에서 스크롤이 없어요');
