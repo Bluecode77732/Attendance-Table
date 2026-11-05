@@ -260,6 +260,29 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     assert.match(await board.evaluate(`document.querySelector('.cell[data-id] .status').textContent`), /^등원 \d\d:\d\d$/);
   });
 
+  it('학원 이름을 고치다 학생 칸을 눌러 끝내도 그 학생 출석은 바뀌지 않고, 끝난 뒤의 클릭은 출석을 바꿔요', async () => {
+    const id = Number(await board.evaluate(`document.querySelectorAll('.cell[data-id]')[1].dataset.id`));
+    const status = async () => (await api.teacher('/api/state')).json.students.find((s) => s.id === id).status;
+    // 목적: 두 번째 학생 칸 가운데를 실제 마우스로 한 번 누릅니다.
+    // 이유: 고치던 입력칸이 포커스를 잃는 순서까지 실제 클릭과 같아야 합니다.
+    // 방법: 칸의 가운데 좌표를 구해 CDP로 이동, 누름, 뗌을 보냅니다.
+    const clickCell = async () => {
+      const box = await board.evaluate(`(() => { const r = document.querySelectorAll('.cell[data-id]')[1].getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+      for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await board.send('Input.dispatchMouseEvent', { type, x: box.x, y: box.y, button: 'left', clickCount: 1 });
+      await wait(600);
+    };
+    const before = await status();
+    await board.evaluate(`document.getElementById('academy').click()`);
+    await clickCell();
+    assert.equal(await status(), before, '입력을 끝낸 클릭이 출석을 바꿨어요');
+    await board.evaluate(`document.querySelector('.academy-input')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+    await clickCell();
+    assert.notEqual(await status(), before, '편집이 끝난 뒤의 클릭은 출석을 바꿔야 해요');
+    const today = (await api.teacher('/api/state')).json.today;
+    await api.teacher('/api/records/edit', { date: today, id, visits: [] });
+    await wait(2500);
+  });
+
   it('출석 기기 창이 등록 코드와 QR을 보여 주고, 기기 화면에서 등록돼요', async () => {
     await board.evaluate(`document.getElementById('open-devices').click(); document.getElementById('pair-start').click()`);
     await wait(500);

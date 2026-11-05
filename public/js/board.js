@@ -46,6 +46,7 @@ let page = 0;
 let classFilter = 'all';
 let editingId = null;
 let academyEditing = false;
+let swallowGridClick = false;
 let dialogStudentId = null;
 let slide = '';
 let drawnQrUrl;
@@ -954,6 +955,24 @@ function editAcademy() {
   input.select();
 }
 academyBtn.addEventListener('click', editAcademy);
+
+// 목적: 학생 칸을 누르기 시작한 순간에 학원 이름을 고치는 중이었는지 기억합니다.
+// 이유: 입력을 끝내려고 학생 칸을 누르면 그 학생 출석까지 넘어갔습니다(ROADMAP §1, 2026-11-06). 누르기 시작하면 입력칸이 먼저 포커스를 잃어 편집이 끝나므로, click 때 보면 늦습니다.
+// 방법: 격자의 pointerdown을 capture로 받아 그때의 academyEditing을 적어 둡니다. 누를 때마다 새로 적으니 끌다 만 경우에도 다음 클릭에 남지 않습니다.
+function noteEditClick() {
+  swallowGridClick = academyEditing;
+}
+
+// 목적: 학원 이름 입력을 끝낸 그 클릭이 학생 칸에 닿지 않게 막습니다.
+// 이유: 입력칸 밖을 누른 것은 저장하려는 뜻이지 출석을 바꾸려는 뜻이 아닙니다. 학생 이름 고치기와 같이, 끝내는 클릭은 칸 동작이 되지 않아야 합니다.
+// 방법: noteEditClick이 적어 둔 클릭이면 capture 단계에서 멈춰 onGridClick까지 가지 않게 합니다. 이름 저장은 입력칸의 blur가 이미 했습니다.
+function swallowEditClick(event) {
+  if (!swallowGridClick) return;
+  swallowGridClick = false;
+  event.stopPropagation();
+}
+grid.addEventListener('pointerdown', noteEditClick, true);
+grid.addEventListener('click', swallowEditClick, true);
 
 // 목적: 머리줄을 접거나 펼칩니다.
 // 이유: 수업 중에는 버튼이 필요 없으니 머리줄을 접어 학생 칸을 더 크게 보여 줍니다.
