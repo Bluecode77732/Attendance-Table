@@ -65,7 +65,7 @@ function openEntry(nextMode, message, ok = false) {
     entryText.textContent = "현황판의 '출석 기기' 창에 나온 6자리 코드를 입력해 주세요.";
   } else {
     entryTitle.textContent = '출석';
-    entryText.textContent = '휴대폰번호 뒷 4자리를 눌러 주세요.';
+    entryText.textContent = '휴대폰번호 뒷 4자리 입력';
   }
   entryMessage.textContent = message ?? '';
   entryMessage.classList.toggle('ok', ok);
@@ -135,7 +135,7 @@ function hello() {
 
 // 목적: 등록 코드를 보내 이 기기를 출석 기기로 등록합니다.
 // 이유: 코드를 본 사람만 출석 기기를 등록할 수 있습니다.
-// 방법: 결과마다 안내를 바꿉니다. paired면 성공 안내를 초록색으로 보여 주며 번호 입력으로 넘어갑니다.
+// 방법: 결과마다 안내를 바꿉니다. paired면 성공 안내를 초록색으로 보여 주며 번호 입력으로 넘어가고.
 function pair(code) {
   send(async () => {
     const data = await api('/api/kiosk/pair', { code });

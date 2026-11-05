@@ -12,22 +12,32 @@
   <link rel="stylesheet" href="/css/board.css">
 </head>
 <body>
-  <header class="bar">
-    <h1>출석부</h1>
-    <p id="summary" class="summary"></p>
-    <select id="class-filter" class="select" aria-label="반 선택"></select>
-    <div class="tools push">
-      <button id="open-paste" class="btn" type="button">명단 붙여넣기</button>
-      <button id="open-classes" class="btn" type="button">반 관리</button>
-      <button id="open-left" class="btn" type="button">퇴원생</button>
-      <button id="open-devices" class="btn" type="button">출석 기기</button>
-      <a class="btn" href="/records" target="_blank" rel="noopener">기록 보기</a>
+  <header id="head" class="head">
+    <div id="head-body" class="head-body">
+      <div class="head-inner">
+        <div class="topline">
+          <h1>출석부</h1>
+          <p id="clock" class="clock"></p>
+        </div>
+        <div class="bar">
+          <p id="summary" class="summary"></p>
+          <select id="class-filter" class="select" aria-label="반 선택"></select>
+          <div class="tools push">
+            <button id="open-paste" class="btn" type="button">명단 붙여넣기</button>
+            <button id="open-classes" class="btn" type="button">반 관리</button>
+            <button id="open-left" class="btn" type="button">퇴원생</button>
+            <button id="open-devices" class="btn" type="button">출석 기기</button>
+            <a class="btn" href="/records" target="_blank" rel="noopener">기록 보기</a>
+          </div>
+          <nav class="pager" aria-label="페이지 이동">
+            <button id="prev" type="button" aria-label="이전 페이지">‹</button>
+            <span id="page-label" aria-live="polite"></span>
+            <button id="next" type="button" aria-label="다음 페이지">›</button>
+          </nav>
+        </div>
+      </div>
     </div>
-    <nav class="pager" aria-label="페이지 이동">
-      <button id="prev" type="button" aria-label="이전 페이지">‹</button>
-      <span id="page-label" aria-live="polite"></span>
-      <button id="next" type="button" aria-label="다음 페이지">›</button>
-    </nav>
+    <button id="head-toggle" class="head-toggle" type="button" aria-controls="head-body" aria-expanded="true">▲ 접기</button>
   </header>
   <main id="grid" class="grid" aria-label="학생 출석 칸"></main>
 

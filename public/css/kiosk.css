@@ -8,8 +8,10 @@
   --warn: #b4581c;
   --paper: #f4f1ea;
   --ink: #2b2b2b;
-  --key: #ffffff;
+  --key: #e3dfd6;
   --key-line: #cfc9bc;
+  --surface: #ffffff;
+  --brand: #23313f;
 }
 
 * { box-sizing: border-box; }
@@ -66,8 +68,8 @@ body {
 }
 .key {
   height: min(15vw, 5.2rem);
-  border: 1px solid var(--key-line);
-  border-radius: 0.9rem;
+  border: 0;
+  border-radius: 0.35rem;
   background: var(--key);
   color: var(--ink);
   font: inherit;
@@ -75,16 +77,18 @@ body {
   font-weight: 700;
   cursor: pointer;
 }
-.key:active { background: #e8e3d8; }
-.key.small { font-size: 1.1rem; }
+.key:active { background: #d2cdc1; }
+/* 숫자 키는 옅게 채우고 '지우기·처음부터'는 남색으로 칠해 한눈에 구분합니다 */
+.key.small { background: var(--brand); color: #fff; font-size: 1.1rem; }
+.key.small:active { background: #141d26; }
 .key:disabled { opacity: 0.35; }
 
 .choices { display: flex; flex-direction: column; gap: 0.7rem; width: min(92vw, 26rem); }
 .choice, .btn {
   min-height: 4rem;
   border: 1px solid var(--key-line);
-  border-radius: 0.9rem;
-  background: var(--key);
+  border-radius: 0.35rem;
+  background: var(--surface);
   color: var(--ink);
   font: inherit;
   font-size: 1.5rem;

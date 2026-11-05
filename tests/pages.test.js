@@ -164,6 +164,38 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     assert.deepEqual(colours, ['rgb(107, 107, 107)', 'rgb(23, 138, 72)', 'rgb(201, 60, 60)']);
   });
 
+  it('머리줄 위 줄에 오늘 날짜와 시각을 보여 줘요', async () => {
+    assert.match(await board.evaluate(`document.getElementById('clock').textContent`), /^\d{1,2}월 \d{1,2}일\([일월화수목금토]\) \d\d:\d\d$/);
+  });
+
+  it('머리줄을 접으면 위로 올라가 칸이 커지고, 다시 누르면 펼쳐져요', async () => {
+    // 목적: 접기 버튼, 머리줄, 학생 칸 영역의 지금 모습을 읽습니다.
+    // 이유: 접기 전후와 펼친 뒤를 같은 값으로 비교합니다.
+    // 방법: 크기는 getBoundingClientRect, 숨김은 계산된 visibility로 봅니다.
+    const read = () => board.evaluate(`(() => { const b = document.getElementById('head-toggle').getBoundingClientRect(); return { body: document.getElementById('head-body').getBoundingClientRect().height, grid: document.getElementById('grid').getBoundingClientRect().height, paste: getComputedStyle(document.getElementById('open-paste')).visibility, label: document.getElementById('head-toggle').textContent, expanded: document.getElementById('head-toggle').getAttribute('aria-expanded'), toggleTop: b.top, toggleBottom: b.bottom }; })()`);
+    const open = await read();
+    assert.ok(open.body > 50);
+    assert.equal(open.label, '▲ 접기');
+    await board.evaluate(`document.getElementById('head-toggle').click()`);
+    await wait(250);
+    const moving = await read();
+    assert.ok(moving.body > 0 && moving.body < open.body, '한 번에 사라지지 않고 천천히 올라가요');
+    await wait(700);
+    const closed = await read();
+    assert.equal(closed.body, 0);
+    assert.equal(closed.paste, 'hidden', '접힌 버튼은 Tab으로도 잡히지 않아요');
+    assert.equal(closed.label, '▼ 펼치기');
+    assert.equal(closed.expanded, 'false');
+    assert.ok(closed.toggleTop >= 0 && closed.toggleBottom > 10, '펼치기 버튼은 화면 맨 위에 남아요');
+    assert.ok(closed.grid > open.grid + 50, '학생 칸 영역이 커져요');
+    await board.evaluate(`document.getElementById('head-toggle').click()`);
+    await wait(900);
+    const reopened = await read();
+    assert.equal(reopened.body, open.body);
+    assert.equal(reopened.paste, 'visible');
+    assert.equal(reopened.label, '▲ 접기');
+  });
+
   it('학생 줄 없이 제목 줄만 붙여넣으면 무엇을 다시 할지 알려 줘요', async () => {
     const text = await paste('이름\t휴대폰\n');
     assert.match(text, /이름을 찾지 못했습니다/);
@@ -223,6 +255,8 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     await kiosk.go(`http://127.0.0.1:${server.port}/k`);
     assert.equal(await kiosk.evaluate(`document.getElementById('entry-title').textContent`), '출석', '새로고침해도 등록이 남아요');
     assert.ok(await kiosk.evaluate(`document.documentElement.scrollHeight <= innerHeight`), '폰 화면에서 스크롤이 없어요');
+    assert.equal(await kiosk.evaluate(`document.getElementById('entry-text').textContent`), '휴대폰번호 뒷 4자리 입력');
+    assert.deepEqual(await kiosk.evaluate(`['1', 'clear'].map((k) => getComputedStyle(document.querySelector('.key[data-key="' + k + '"]')).backgroundColor)`), ['rgb(227, 223, 214)', 'rgb(35, 49, 63)'], '숫자 키와 지우기 키는 색이 달라요');
 
     await wait(2500);
     assert.equal(await board.evaluate(`document.getElementById('pair-code').textContent`), '');

@@ -887,6 +887,32 @@ devicesDialog.addEventListener('close', () => {
 
 document.addEventListener('keydown', onKeydown);
 
+// 목적: 머리줄 위 줄에 오늘 날짜와 지금 시각을 '11월 6일(금) 14:05'처럼 적습니다.
+// 이유: TV를 보는 학생과 교사가 등원·하원 시각을 바로 맞춰 볼 수 있게 합니다.
+// 방법: 이 PC의 시계로 그립니다. 서버도 같은 PC라 기록 시각과 어긋나지 않습니다. 분이 바뀌는 것을 놓치지 않게 10초마다 다시 그립니다.
+function drawClock() {
+  const now = new Date();
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('clock').textContent = `${now.getMonth() + 1}월 ${now.getDate()}일(${days[now.getDay()]}) ${hh}:${mm}`;
+}
+
+// 목적: 머리줄을 접거나 펼칩니다.
+// 이유: 수업 중에는 버튼이 필요 없으니 머리줄을 접어 학생 칸을 더 크게 보여 줍니다.
+// 방법: collapsed 클래스만 바꾸고 움직임은 CSS가 맡습니다. 접어도 이 버튼은 화면 맨 위 가운데에 남습니다. 새로 열면 다시 펼쳐진 채로 시작합니다.
+function toggleHead() {
+  const head = document.getElementById('head');
+  const button = document.getElementById('head-toggle');
+  const collapsed = head.classList.toggle('collapsed');
+  button.textContent = collapsed ? '▼ 펼치기' : '▲ 접기';
+  button.setAttribute('aria-expanded', String(!collapsed));
+}
+document.getElementById('head-toggle').addEventListener('click', toggleHead);
+
+drawClock();
+setInterval(drawClock, 10_000);
+
 // 첫 상태가 빈 명단이면 구조가 바뀌지 않았다고 보아 그리지 않으니, 시작할 때 한 번 그립니다.
 render();
 poll();
