@@ -196,6 +196,24 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     assert.equal(reopened.label, '▲ 접기');
   });
 
+  it('키보드 ↑는 머리줄을 접고 ↓는 펴며, 이미 그 상태면 그대로예요', async () => {
+    // 목적: 실제 키보드로 화살표 키 하나를 누르고, 접기 움직임이 끝난 뒤 머리줄이 접혔는지 읽습니다.
+    // 이유: ↑와 ↓를 여러 번 눌러도 상태가 뒤집히지 않는지 같은 순서로 봅니다.
+    // 방법: 포커스를 입력칸 밖으로 뺀 뒤 CDP로 keyDown·keyUp을 보내고 0.9초 기다립니다.
+    const press = async (key, code) => {
+      await board.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key, windowsVirtualKeyCode: code });
+      await board.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key, windowsVirtualKeyCode: code });
+      await wait(900);
+      return board.evaluate(`document.getElementById('head').classList.contains('collapsed')`);
+    };
+    await board.evaluate(`document.activeElement.blur()`);
+    assert.equal(await press('ArrowUp', 38), true, '↑로 접혀요');
+    assert.equal(await press('ArrowUp', 38), true, '한 번 더 눌러도 접힌 채예요');
+    assert.equal(await board.evaluate(`document.getElementById('head-toggle').textContent`), '▼ 펼치기');
+    assert.equal(await press('ArrowDown', 40), false, '↓로 펴져요');
+    assert.equal(await press('ArrowDown', 40), false, '한 번 더 눌러도 펴진 채예요');
+  });
+
   it('접기 버튼은 머리줄이나 그 자리에 마우스를 올렸을 때만 천천히 보이고, 접힌 뒤에도 맨 위 가운데에 올리면 보여요', async () => {
     // 목적: 실제 마우스를 한 점으로 옮긴 뒤 접기 버튼이 얼마나 보이는지 읽습니다.
     // 이유: 숨김과 나타남은 hover로 정해져서 실제 마우스 위치가 필요합니다.

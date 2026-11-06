@@ -825,15 +825,18 @@ function goPage(delta) {
   render();
 }
 
-// 목적: 키보드 입력을 처리합니다. ←/→는 페이지 이동입니다.
-// 이유: 교사가 마우스 없이도 TV 앞에서 넘길 수 있어야 합니다.
-// 방법: 창이 열려 있거나, 입력 중이거나, 조합키가 눌려 있으면 무시합니다.
+// 목적: 키보드 입력을 처리합니다. ←/→는 페이지 이동, ↑는 머리줄 접기, ↓는 펴기입니다.
+// 이유: 교사가 마우스 없이도 TV 앞에서 넘기고, 수업 중에 머리줄을 접을 수 있어야 합니다.
+// 방법: 창이 열려 있거나, 입력 중이거나, 조합키가 눌려 있으면 무시합니다. ↑/↓는 이미 그 상태면 아무것도 하지 않아 여러 번 눌러도 같습니다.
 function onKeydown(event) {
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
   if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
   if (document.querySelector('dialog[open]')) return;
+  const collapsed = document.getElementById('head').classList.contains('collapsed');
   if (event.key === 'ArrowRight') goPage(1);
   else if (event.key === 'ArrowLeft') goPage(-1);
+  else if (event.key === 'ArrowUp' && !collapsed) toggleHead();
+  else if (event.key === 'ArrowDown' && collapsed) toggleHead();
 }
 
 grid.addEventListener('click', onGridClick);
