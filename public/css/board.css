@@ -53,6 +53,11 @@ body {
   cursor: pointer;
 }
 .head-toggle:focus-visible { outline: 3px solid #fff; outline-offset: -3px; }
+/* 수업 중 TV에 버튼이 늘 떠 있지 않게, 머리줄(접힌 뒤에는 버튼 자리)에 마우스를 올리거나 키보드로 옮겨 왔을 때만 천천히 보입니다.
+   투명할 때도 마우스는 받으므로 접힌 뒤 맨 위 가운데에 올리면 나타납니다 */
+.head-toggle { opacity: 0; transition: opacity 0.35s ease; }
+.head:hover .head-toggle,
+.head-toggle:focus-visible { opacity: 1; }
 .topline { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.6rem 1rem 0; }
 .topline h1 { margin: 0; font-size: 1.5rem; white-space: nowrap; }
 /* 학원 이름은 눌러서 그 자리에서 고칩니다. 비어 있으면 옅은 '학원 이름 넣기'가 보입니다 */
@@ -325,6 +330,7 @@ dialog::backdrop { background: rgba(20, 20, 20, 0.75); }
 @media (hover: none) {
   .actions { opacity: 1; pointer-events: auto; }
   .cell.add .toggle { opacity: 0.7; }
+  .head-toggle { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

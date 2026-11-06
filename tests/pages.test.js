@@ -196,6 +196,29 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     assert.equal(reopened.label, '▲ 접기');
   });
 
+  it('접기 버튼은 머리줄이나 그 자리에 마우스를 올렸을 때만 천천히 보이고, 접힌 뒤에도 맨 위 가운데에 올리면 보여요', async () => {
+    // 목적: 실제 마우스를 한 점으로 옮긴 뒤 접기 버튼이 얼마나 보이는지 읽습니다.
+    // 이유: 숨김과 나타남은 hover로 정해져서 실제 마우스 위치가 필요합니다.
+    // 방법: CDP로 마우스를 옮기고, 0.35초 나타남이 끝나도록 기다린 뒤 계산된 opacity를 봅니다.
+    const opacityAt = async (x, y) => {
+      await board.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+      await wait(600);
+      return board.evaluate(`getComputedStyle(document.getElementById('head-toggle')).opacity`);
+    };
+    const toggleCenter = () => board.evaluate(`(() => { const r = document.getElementById('head-toggle').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+    assert.equal(await opacityAt(960, 900), '0', '학생 칸 위에서는 숨어요');
+    assert.equal(await opacityAt(960, 20), '1', '머리줄에 올리면 보여요');
+    await board.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 960, y: 900 });
+    await board.evaluate(`document.getElementById('head-toggle').click()`);
+    await wait(900);
+    assert.equal(await opacityAt(960, 900), '0', '접힌 뒤 학생 칸 위에서는 숨어요');
+    const spot = await toggleCenter();
+    assert.equal(await opacityAt(spot.x, spot.y), '1', '접힌 뒤 맨 위 가운데에 올리면 보여요');
+    await board.evaluate(`document.getElementById('head-toggle').click()`);
+    await wait(900);
+    await board.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 1075 });
+  });
+
   it('학원 이름이 없으면 옅은 안내가 보이고, 누르면 그 자리에서 고쳐 Enter로 저장하며 Esc는 취소해요', async () => {
     assert.equal(await board.evaluate(`document.getElementById('academy').textContent`), '학원 이름 넣기');
     assert.equal(await board.evaluate(`document.getElementById('academy').classList.contains('placeholder')`), true);
