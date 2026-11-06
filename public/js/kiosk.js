@@ -211,7 +211,7 @@ function showResult(data) {
     resultEl.classList.add(data.kind === 'out' ? 'out' : 'in');
     resultBig.textContent = data.kind === 'out' ? `${data.name} 이미 하원했어요` : `${data.name} 이미 등원했어요`;
     resultTime.textContent = data.time;
-    resultSub.textContent = '10분 뒤에 다시 눌러 주세요.';
+    resultSub.textContent = '3분 뒤에 다시 눌러 주세요.';
   } else {
     resultEl.classList.add('warn');
     resultBig.textContent = '등록되지 않은 번호예요';

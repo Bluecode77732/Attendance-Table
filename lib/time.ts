@@ -26,7 +26,7 @@ function pad2(n: number): string {
 }
 
 // 목적: HH:MM을 자정부터 지난 분으로 바꿉니다.
-// 이유: 10분 반복 구간과 등원·하원 순서를 비교해야 합니다.
+// 이유: 반복 구간(REPEAT_WINDOW_MIN)과 등원·하원 순서를 비교해야 합니다.
 // 방법: 시와 분을 숫자로 나눠 계산합니다.
 export function minutesOf(time: string): number {
   return Number(time.slice(0, 2)) * 60 + Number(time.slice(3));

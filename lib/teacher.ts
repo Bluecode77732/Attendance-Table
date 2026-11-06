@@ -46,7 +46,7 @@ export function teacherState(now: number): TeacherState {
 
 // 목적: 현황판 칸을 눌렀을 때 학생의 오늘 기록을 한 단계 앞으로 보냅니다.
 // 이유: 교사가 출석 기기 없이 직접 바꿀 수 있어야 하고, 앞으로만 가서 잘못 눌러도 시각이 지워지지 않습니다.
-// 방법: 퇴원한 학생이면 "상태와 맞지 않음", 하루 방문 한도를 넘으면 같은 오류입니다. 10분 반복 구간은 보지 않습니다.
+// 방법: 퇴원한 학생이면 "상태와 맞지 않음", 하루 방문 한도를 넘으면 같은 오류입니다. 출석 기기의 반복 구간(REPEAT_WINDOW_MIN)은 보지 않습니다.
 export function toggle(id: unknown, now: number): void {
   const student = roster.mustFindStudent(id);
   if (student.leftOn !== null) throw conflict('퇴원한 학생입니다.');

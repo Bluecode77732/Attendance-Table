@@ -21,7 +21,7 @@ export function todayStatus(student: Student, now: number): TodayStatus {
 
 // 목적: 학생의 오늘 기록을 한 단계 앞으로 보냅니다. 미등원이나 하원이면 새로 등원, 등원 중이면 하원입니다.
 // 이유: 출석 기기와 현황판 칸 누르기가 같은 규칙으로 기록해야 합니다. 앞으로만 가서 잘못 눌러도 시각이 지워지지 않습니다.
-// 방법: 출석 기기에서는 직전 입력 후 10분 안이면 반복(already)으로 보고 아무것도 바꾸지 않습니다. 바뀌면 persist합니다.
+// 방법: 출석 기기에서는 직전 입력 후 REPEAT_WINDOW_MIN(3분) 안이면 반복(already)으로 보고 아무것도 바꾸지 않습니다. 바뀌면 persist합니다.
 export function advanceVisit(student: Student, now: number, checkRepeat: boolean): AdvanceResult {
   const db = getDb();
   const date = localDate(now);

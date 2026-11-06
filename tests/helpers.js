@@ -42,7 +42,7 @@ function removeDir(dir) {
 }
 
 // 목적: 시험용 시계를 "오늘부터 dayOffset일 뒤 hh:mm"으로 옮깁니다.
-// 이유: 10분 반복 구간과 자정 넘김을 기다리지 않고 시험합니다.
+// 이유: 반복 구간과 자정 넘김을 기다리지 않고 시험합니다.
 // 방법: 목표 시각과 지금의 차이를 clockFile에 쓰고, fake-clock.js가 다시 읽을 때까지 잠깐 기다립니다. 그날 날짜(YYYY-MM-DD)를 돌려줍니다.
 async function setClock(clockFile, dayOffset, hh, mm) {
   const target = new Date();

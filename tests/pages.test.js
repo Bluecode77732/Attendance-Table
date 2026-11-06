@@ -357,7 +357,7 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     // 이유: 학생이 키패드를 누르는 것과 같은 경로로 시험합니다.
     // 방법: 숫자마다 data-key가 같은 버튼을 클릭합니다.
     const press = (digits) => kiosk.evaluate(`'${digits}'.split('').forEach((d) => document.querySelector('.key[data-key="' + d + '"]').click())`);
-    // 사아자는 앞 시험에서 현황판으로 등원시켰으니 10분 반복에 걸립니다. 아직 오지 않은 차카타로 시험합니다.
+    // 사아자는 앞 시험에서 현황판으로 등원시켰으니 반복 구간(3분)에 걸릴 수 있습니다. 아직 오지 않은 차카타로 시험합니다.
     await press('8888');
     await wait(600);
     assert.equal(await kiosk.evaluate(`document.getElementById('result-big').textContent`), '차카타 등원했어요');

@@ -205,19 +205,19 @@ describe('서버 API', () => {
       assert.equal(picked.time, '15:00');
     });
 
-    it('10분 안에 다시 누르면 반복이고, 다른 기기에서도 같아요', async () => {
+    it('3분 안에 다시 누르면 반복이고, 다른 기기에서도 같아요', async () => {
       assert.equal((await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev1)).json.state, 'in');
-      await setClock(clockFile, 0, 15, 9);
+      await setClock(clockFile, 0, 15, 2);
       const again = (await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev2)).json;
       assert.equal(again.state, 'already');
       assert.equal(again.kind, 'in');
       assert.equal(again.time, '15:00');
     });
 
-    it('10분이 지나면 하원, 하원 뒤 다시 오면 두 번째 등원이에요', async () => {
-      await setClock(clockFile, 0, 15, 10);
+    it('3분이 지나면 하원, 하원 뒤 다시 오면 두 번째 등원이에요', async () => {
+      await setClock(clockFile, 0, 15, 3);
       assert.equal((await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev1)).json.state, 'out');
-      await setClock(clockFile, 0, 15, 12);
+      await setClock(clockFile, 0, 15, 5);
       const repeat = (await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev1)).json;
       assert.equal(repeat.state, 'already');
       assert.equal(repeat.kind, 'out');
@@ -227,7 +227,7 @@ describe('서버 API', () => {
       assert.equal(ga.status, 'in');
       assert.equal(ga.inTime, '19:00');
       const rec = (await api.teacher(`/api/records?month=${today.slice(0, 7)}`)).json;
-      assert.deepEqual(rec.days[today][String(ga.id)], [{ in: '15:00', out: '15:10' }, { in: '19:00', out: null }]);
+      assert.deepEqual(rec.days[today][String(ga.id)], [{ in: '15:00', out: '15:03' }, { in: '19:00', out: null }]);
     });
 
     it('교사가 칸을 누르면 앞으로만 넘어가요', async () => {

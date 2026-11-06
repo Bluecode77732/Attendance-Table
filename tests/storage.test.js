@@ -164,18 +164,18 @@ describe('저장', () => {
     await api.teacher('/api/import/apply', { rows: [['가나다', '01011112222', '']] });
     const dev = await pairDevice(api);
 
-    const day1 = await setClock(clockFile, 0, 23, 50);
-    assert.equal((await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev)).json.time, '23:50');
+    const day1 = await setClock(clockFile, 0, 23, 58);
+    assert.equal((await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev)).json.time, '23:58');
     await setClock(clockFile, 0, 23, 59);
     assert.equal((await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev)).json.state, 'already');
 
-    const day2 = await setClock(clockFile, 1, 0, 3);
+    const day2 = await setClock(clockFile, 1, 0, 0);
     const state = (await api.teacher('/api/state')).json;
     assert.equal(state.today, day2);
     assert.ok(state.students.every((s) => s.status === 'absent'));
     const next = (await api.kiosk('/api/kiosk/checkin', { digits: '2222' }, dev)).json;
     assert.equal(next.state, 'in', '자정을 넘긴 간격은 반복으로 보지 않아요');
-    assert.equal(next.time, '00:03');
+    assert.equal(next.time, '00:00');
 
     const rec = (await api.teacher(`/api/records?month=${day1.slice(0, 7)}`)).json;
     assert.equal(rec.days[day1]['1'][0].out, null, '전날 방문은 하원 없이 남아요');
