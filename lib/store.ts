@@ -6,13 +6,14 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { DATA_FILE, BACKUP_DIR, DATA_VERSION, BACKUP_KEEP, DATE_RE, TIME_RE, PHONE_RE, HASH_RE, BACKUP_NAME_RE } from './config.ts';
-import { localDate } from './time.ts';
+import { localDate, localTime } from './time.ts';
 import type { Db, V1Db, V2Db } from './types.ts';
 
 let db: Db = defaultDb();
 let rev = Date.now(); // 변경 때마다 +1. 재시작해도 줄어들지 않게 시각에서 시작합니다.
 let writeQueue: Promise<void> = Promise.resolve();
 let backupDay: string | null = null; // 오늘 백업을 이미 했는지. 재시작하면 파일 이름으로 다시 확인합니다
+let saveErrorTime: string | null = null; // 마지막 저장이 실패했으면 처음 실패한 시각(HH:MM). 저장이 다시 성공하면 비웁니다
 
 // 목적: 저장된 데이터를 읽어 옵니다. 없으면 빈 명단, 예전 형식이면 새 형식으로 바꾸고, 깨졌으면 파일을 보존한 채 빈 명단으로 시작합니다.
 // 이유: 첫 실행이나 파일 손상에도 서버는 떠야 하고, 손상된 기록을 조용히 덮어써서 잃으면 안 됩니다(DEC-06, DEC-11).
@@ -186,8 +187,8 @@ export function getRev(): number {
 }
 
 // 목적: 현재 데이터를 디스크에 저장합니다. 그날 첫 저장이면 저장 전에 백업부터 합니다.
-// 이유: 서버를 껐다 켜도 출석이 남아야 하고, 쓰는 도중 꺼져도 파일이 깨지면 안 됩니다. 하루가 시작될 때의 파일을 남겨 두면 그날 실수를 되돌릴 수 있습니다(DEC-11).
-// 방법: 지금 시점의 스냅샷을 만들어 순서대로 임시 파일에 쓴 뒤 rename으로 교체합니다(비동기 큐). 백업은 같은 큐 안에서 쓰기 직전에 합니다.
+// 이유: 서버를 껐다 켜도 출석이 남아야 하고, 쓰는 도중 꺼져도 파일이 깨지면 안 됩니다. 하루가 시작될 때의 파일을 남겨 두면 그날 실수를 되돌릴 수 있습니다(DEC-11). 응답은 저장 전에 나가므로, 실패하면 교사가 현황판에서 알 수 있게 실패 시각을 남깁니다(ROADMAP §3).
+// 방법: 지금 시점의 스냅샷을 만들어 순서대로 임시 파일에 쓴 뒤 rename으로 교체합니다(비동기 큐). 백업은 같은 큐 안에서 쓰기 직전에 합니다. 실패하면 처음 실패한 시각을 saveErrorTime에 두고, 다음 쓰기가 성공하면 비웁니다. 스냅샷은 db 전체라 그 성공이 앞서 못 쓴 변경까지 담습니다.
 export function persist(): void {
   rev += 1;
   const snapshot = JSON.stringify(db);
@@ -201,8 +202,19 @@ export function persist(): void {
       }
       await fsp.writeFile(tmp, snapshot, 'utf8');
       await fsp.rename(tmp, DATA_FILE);
+      saveErrorTime = null;
     })
-    .catch((e: Error) => console.error('데이터를 저장하지 못했습니다.', e.message));
+    .catch((e: Error) => {
+      saveErrorTime ??= localTime(Date.now());
+      console.error('데이터를 저장하지 못했습니다.', e.message);
+    });
+}
+
+// 목적: 저장이 실패한 채인지와 처음 실패한 시각을 알려 줍니다.
+// 이유: 교사 화면이 "저장되지 않고 있음"을 보여 줘야 출석부를 끄기 전에 손쓸 수 있습니다.
+// 방법: persist가 남긴 시각을 { time }으로 돌려주고, 실패 중이 아니면 null입니다.
+export function getSaveError(): { time: string } | null {
+  return saveErrorTime === null ? null : { time: saveErrorTime };
 }
 
 // 목적: 오늘 날짜로 data.json을 backup 폴더에 복사하고, 30개를 넘는 오래된 백업을 지웁니다.

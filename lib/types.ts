@@ -89,6 +89,7 @@ export interface TeacherState {
   kioskUrl: string | null;
   address: string | null;
   addressCount: number;
+  saveError: { time: string } | null; // 저장이 실패한 채이면 처음 실패한 시각. 교사 PC에만 갑니다
 }
 
 export interface MonthRecords {

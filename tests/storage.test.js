@@ -155,6 +155,31 @@ describe('저장', () => {
     assert.equal((await clients(server.port).teacher('/api/state')).json.students.length, 0);
   }));
 
+  it('저장에 실패하면 상태에 실패 시각을 싣고, 다음 저장이 성공하면 지우며 그사이 변경도 함께 저장해요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    const server = await start({ dataFile });
+    const api = clients(server.port);
+    const savedNames = () => JSON.parse(fs.readFileSync(dataFile, 'utf8')).students.map((s) => s.name);
+    await api.teacher('/api/import/apply', { rows: [['가나다', '', '']] });
+    await settle();
+    assert.equal((await api.teacher('/api/state')).json.saveError, null);
+
+    // data.json.tmp 자리에 폴더가 있으면 임시 파일을 쓰지 못합니다.
+    fs.mkdirSync(`${dataFile}.tmp`);
+    await api.teacher('/api/import/apply', { rows: [['라마바', '', '']] });
+    await settle();
+    const failed = (await api.teacher('/api/state')).json.saveError;
+    assert.ok(failed && /^\d{2}:\d{2}$/.test(failed.time), JSON.stringify(failed));
+    assert.deepEqual(savedNames(), ['가나다'], '실패한 변경은 파일에 없어요');
+    assert.match(server.log(), /데이터를 저장하지 못했습니다/);
+
+    fs.rmdirSync(`${dataFile}.tmp`);
+    await api.teacher('/api/import/apply', { rows: [['사아자', '', '']] });
+    await settle();
+    assert.equal((await api.teacher('/api/state')).json.saveError, null);
+    assert.deepEqual(savedNames(), ['가나다', '라마바', '사아자'], '앞서 못 쓴 변경도 함께 저장돼요');
+  }));
+
   it('자정이 지나면 모두 미등원이 되고, 새날 첫 입력은 등원이며 백업이 생겨요', () => withSandbox(async (dir, start) => {
     const dataFile = path.join(dir, 'data.json');
     const clockFile = path.join(dir, 'clock.txt');

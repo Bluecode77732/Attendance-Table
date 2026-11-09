@@ -105,11 +105,12 @@ function structureKey(list) {
 
 // 목적: 서버가 준 최신 상태를 화면에 반영합니다.
 // 이유: 폴링 응답과 교사 동작 응답이 모두 이 한 경로로 화면을 갱신해야 서로 어긋나지 않습니다.
-// 방법: 옛 응답(rev가 작음)은 버립니다. 이름 입력 중이면 입력창이 날아가지 않게 학생 목록과 칸 갱신은 건너뜁니다. 구조가 같으면 색만, 다르면 전체를 다시 그립니다. 반 선택과 열린 창은 학생 목록을 바꾼 뒤에 맞춥니다. 학원 이름은 고치는 중이 아니면 바로 맞춥니다.
+// 방법: 옛 응답(rev가 작음)은 버립니다. 이름 입력 중이면 입력창이 날아가지 않게 학생 목록과 칸 갱신은 건너뜁니다. 구조가 같으면 색만, 다르면 전체를 다시 그립니다. 반 선택과 열린 창은 학생 목록을 바꾼 뒤에 맞춥니다. 학원 이름과 저장 실패 안내는 이름을 고치는 중에도 맞춥니다.
 function applyState(next) {
   if (next.rev < rev) return;
   state = next;
   drawAcademy();
+  drawSaveError();
   if (editingId === null) {
     rev = next.rev;
     const structural = structureKey(next.students) !== structureKey(students);
@@ -123,6 +124,18 @@ function applyState(next) {
     }
   }
   refreshDialogs();
+}
+
+// 목적: 출석이 파일에 저장되지 않고 있으면 화면 아래에 사라지지 않는 안내를 띄우고, 다시 저장되면 지웁니다.
+// 이유: 서버는 저장 전에 응답하므로 출석 기기에는 "등원했어요"가 그대로 뜹니다. 교사가 알아야 출석부를 끄기 전에 손쓸 수 있습니다(ROADMAP §3).
+// 방법: state.saveError가 있으면 종류 'save'로 띄웁니다. 시간이 정해진 다른 안내가 떠 있으면 덮지 않고, 그 안내가 사라진 뒤 다음 폴링(2초)에 띄웁니다. 없으면 'save' 안내만 지웁니다.
+function drawSaveError() {
+  if (!state.saveError) {
+    if (toastKind === 'save') hideToast();
+    return;
+  }
+  if (!toastEl.hidden && toastKind !== 'save' && toastKind !== 'offline') return;
+  showToast(`출석이 파일에 저장되지 않고 있어요(${state.saveError.time}부터). 이대로 출석부를 끄면 그 뒤 기록이 사라질 수 있어요.`, 0, 'save');
 }
 
 // 목적: 서버 상태를 한 번 가져와 반영합니다.

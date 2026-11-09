@@ -4,7 +4,7 @@
 
 import { PORT, MAX_STUDENTS, MAX_CLASSES, MAX_VISITS_PER_DAY, CLASS_NAME_MAX, ACADEMY_NAME_MAX, PAGE_CLOSE_GRACE_MS, MAX_OPEN_PAGES, PAGE_ID_RE } from './config.ts';
 import { conflict, invalid } from './errors.ts';
-import { getDb, getRev, persist } from './store.ts';
+import { getDb, getRev, getSaveError, persist } from './store.ts';
 import { localDate } from './time.ts';
 import * as roster from './roster.ts';
 import * as records from './records.ts';
@@ -19,7 +19,7 @@ export { nextAddress } from './network.ts';
 
 // 목적: 교사 화면(TV)에 보낼 전체 상태를 만듭니다.
 // 이유: TV가 2초마다 이 하나만 읽어 칸, 반 선택, 출석 기기 창을 모두 그립니다.
-// 방법: 학생마다 오늘 상태를 계산해 필드를 하나씩 담습니다. 기기는 해시 없이 이름과 등록일만, 등록 코드는 열려 있을 때만 담습니다.
+// 방법: 학생마다 오늘 상태를 계산해 필드를 하나씩 담습니다. 기기는 해시 없이 이름과 등록일만, 등록 코드는 열려 있을 때만 담습니다. 저장이 실패한 채이면 그 시각도 담습니다.
 export function teacherState(now: number): TeacherState {
   const db = getDb();
   const { address, count } = network.currentAddress();
@@ -41,6 +41,7 @@ export function teacherState(now: number): TeacherState {
     kioskUrl: address ? `http://${address}:${PORT}/k` : null,
     address,
     addressCount: count,
+    saveError: getSaveError(),
   };
 }
 

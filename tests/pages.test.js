@@ -502,6 +502,25 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     }
   });
 
+  it('저장에 실패하면 현황판 아래에 사라지지 않는 안내가 뜨고, 다시 저장되면 사라져요', async () => {
+    const tmp = `${server.dataFile}.tmp`;
+    const toast = () => board.evaluate(`(() => { const t = document.getElementById('toast'); return t.hidden ? '' : t.textContent; })()`);
+    fs.mkdirSync(tmp);
+    try {
+      await api.teacher('/api/import/apply', { rows: [['저장실패', '', '']] });
+      await wait(2600);
+      assert.match(await toast(), /^출석이 파일에 저장되지 않고 있어요\(\d{2}:\d{2}부터\)\./);
+      await wait(4500);
+      assert.match(await toast(), /저장되지 않고 있어요/, '시간이 지나도 사라지지 않아요');
+    } finally {
+      fs.rmdirSync(tmp);
+    }
+    const id = (await api.teacher('/api/state')).json.students.find((s) => s.name === '저장실패').id;
+    await api.teacher('/api/delete', { id });
+    await wait(2600);
+    assert.doesNotMatch(await toast(), /저장되지 않고 있어요/);
+  });
+
   it('화면에 스크립트 오류가 없어요', () => {
     assert.deepEqual(errors, []);
   });
