@@ -422,3 +422,16 @@ describe('기록 파일(CSV)', () => {
     if (ip) assert.equal((await request(server.port, { pathName: FILE_PATH, host: ip, hostHeader: `${ip}:${server.port}` })).status, 403);
   });
 });
+
+describe('학원 밖 주소 거르기(DEC-20)', () => {
+  it('루프백, 사설 대역, 링크 로컬만 학원 안쪽 주소로 봐요', async () => {
+    const { isLocalAddress } = await import('../lib/network.ts');
+    assert.equal(typeof isLocalAddress, 'function');
+    for (const ip of ['127.0.0.1', '127.5.6.7', '::1', '::ffff:127.0.0.1', '10.2.0.2', '172.16.0.1', '172.31.255.255', '192.168.0.10', '::ffff:192.168.1.5', '169.254.3.4']) {
+      assert.equal(isLocalAddress(ip), true, ip);
+    }
+    for (const ip of ['8.8.8.8', '203.0.113.5', '172.15.0.1', '172.32.0.1', '100.64.0.1', '11.0.0.1', '192.169.0.1', '1.2.3', '1.2.3.4.5', 'a.b.c.d', '', 'fe80::1', '2001:db8::1']) {
+      assert.equal(isLocalAddress(ip), false, ip);
+    }
+  });
+});

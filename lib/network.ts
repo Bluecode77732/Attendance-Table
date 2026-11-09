@@ -1,5 +1,5 @@
-// 목적: 출석 기기에 보여 줄 교사 PC의 LAN 주소를 고르고, 교사가 다음 후보로 바꿀 수 있게 합니다.
-// 사용처: lib/teacher.ts(현황판 상태, 주소 바꾸기)와 server.ts(시작 안내)가 불러 씁니다.
+// 목적: 출석 기기에 보여 줄 교사 PC의 LAN 주소를 고르고, 교사가 다음 후보로 바꿀 수 있게 합니다. 연결해 온 주소가 학원 안쪽인지도 가립니다.
+// 사용처: lib/teacher.ts(현황판 상태, 주소 바꾸기)와 server.ts(시작 안내, 학원 밖 연결 끊기)가 불러 씁니다.
 // 근거: 주소 고르기는 HTTP나 업무 규칙과 상관없는 PC 환경 문제라 server.js를 나누면서 따로 뺐습니다(DEC-14).
 
 import os from 'node:os';
@@ -19,6 +19,18 @@ export function lanAddresses(): string[] {
   }
   const rank = (ip: string) => (ip.startsWith('192.168.') ? 0 : ip.startsWith('10.') ? 1 : /^172\.(1[6-9]|2\d|3[01])\./.test(ip) ? 2 : 3);
   return found.sort((a, b) => rank(a) - rank(b));
+}
+
+// 목적: 연결해 온 상대 주소가 학원 안쪽(이 PC나 사설 네트워크)인지 알려 줍니다.
+// 이유: 공인 IP가 있는 PC에서 인터넷의 상대가 출석 기기 입구에 닿지 않게 합니다(DEC-20).
+// 방법: IPv4 앞에 붙는 ::ffff:를 떼고, ::1과 127/8, 10/8, 172.16/12, 192.168/16, 169.254/16만 참으로 봅니다. 그 밖의 IPv6와 형식이 틀린 값은 거짓입니다.
+export function isLocalAddress(address: string): boolean {
+  const ip = address.startsWith('::ffff:') ? address.slice(7) : address;
+  if (ip === '::1') return true;
+  const parts = ip.split('.');
+  if (parts.length !== 4 || !parts.every((p) => /^\d{1,3}$/.test(p))) return false;
+  const [a, b] = parts.map(Number);
+  return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254);
 }
 
 // 목적: 지금 보여 줄 주소와 후보 수를 돌려줍니다.
