@@ -1,4 +1,4 @@
-// 목적: 서버 API의 동작을 고정해 두는 시험입니다. 교사 관문, 명단, 기기 등록, 출석, 퇴원, 기록 수정을 확인합니다.
+// 목적: 서버 API의 동작을 고정해 두는 시험입니다. 교사 관문, 명단, 기기 등록, 출석, 퇴원, 기록 수정, 기록 파일(CSV)을 확인합니다.
 // 사용처: `node --test "tests/*.test.js"`로 실행합니다. 가짜 이름만 쓰고, 임시 폴더의 데이터로 돕니다.
 // 근거: 구조를 나누거나 타입을 달 때 동작이 그대로인지 확인할 기준이 필요합니다(ROADMAP §1). 일회용으로 쓰던 시험을 옮겨 왔습니다.
 
@@ -314,5 +314,111 @@ describe('서버 API', () => {
       await api.teacher('/api/delete', { id: ga.id });
       assert.deepEqual((await api.teacher('/api/records?month=2026-10')).json.days, {});
     });
+  });
+});
+
+describe('기록 파일(CSV)', () => {
+  let server;
+  let api;
+  let device;
+  const FILE_PATH = '/api/records/csv?month=2026-10';
+  const HEADER = '"날짜","이름","반","등원","하원"\r\n';
+  const BOM = String.fromCodePoint(0xfeff);
+
+  // 목적: 기록 파일을 교사 PC처럼 받아 상태, 헤더, 본문 바이트를 돌려줍니다.
+  // 이유: 내려받기 응답은 JSON이 아니고, 파일 이름과 BOM은 헤더와 바이트로만 확인할 수 있습니다.
+  // 방법: 127.0.0.1로 fetch하고(Host도 127.0.0.1) 본문을 Buffer로 읽습니다.
+  const download = async (pathName) => {
+    const res = await fetch(`http://127.0.0.1:${server.port}${pathName}`);
+    return { status: res.status, headers: res.headers, bytes: Buffer.from(await res.arrayBuffer()) };
+  };
+
+  before(async () => {
+    server = await startServer();
+    api = clients(server.port);
+    device = await pairDevice(api);
+    await api.teacher('/api/import/apply', { rows: [
+      ['나가람', '010-1111-2222', '3시 타임, 5시 타임'],
+      ['=1+2', '', ''],
+      ['+더하기', '', ''],
+      ['-빼기', '', ''],
+      ['@골뱅이', '', ''],
+      ['쉼,표"따옴', '', '7시 타임'],
+      ['퇴원생', '010-3333-4444', ''],
+    ] });
+    const ids = Object.fromEntries((await api.teacher('/api/state')).json.students.map((s) => [s.name, s.id]));
+    const edit = async (date, name, visits) => assert.equal((await api.teacher('/api/records/edit', { date, id: ids[name], visits })).status, 200);
+    await edit('2026-10-02', '나가람', [{ in: '15:00', out: '17:00' }, { in: '19:00', out: null }]);
+    for (const name of ['=1+2', '+더하기', '-빼기', '@골뱅이', '쉼,표"따옴']) await edit('2026-10-01', name, [{ in: '14:00', out: '15:00' }]);
+    await edit('2026-10-03', '퇴원생', [{ in: '16:00', out: '18:00' }]);
+    await edit('2026-11-01', '나가람', [{ in: '15:00', out: '16:00' }]);
+    await api.teacher('/api/leave', { id: ids['퇴원생'] });
+  });
+
+  after(async () => {
+    await server.stop();
+    removeDir(server.dir);
+  });
+
+  it('그 달 방문을 한 줄씩 날짜, 명단 순으로 담고, 퇴원생 기록도 넣고 번호는 넣지 않아요', async () => {
+    const { status, bytes } = await download(FILE_PATH);
+    assert.equal(status, 200);
+    const expected = `${BOM}${HEADER}${[
+      `"2026-10-01","'=1+2","","14:00","15:00"`,
+      `"2026-10-01","'+더하기","","14:00","15:00"`,
+      `"2026-10-01","'-빼기","","14:00","15:00"`,
+      `"2026-10-01","'@골뱅이","","14:00","15:00"`,
+      `"2026-10-01","쉼,표""따옴","7시 타임","14:00","15:00"`,
+      `"2026-10-02","나가람","3시 타임, 5시 타임","15:00","17:00"`,
+      `"2026-10-02","나가람","3시 타임, 5시 타임","19:00",""`,
+      `"2026-10-03","퇴원생","","16:00","18:00"`,
+    ].map((line) => `${line}\r\n`).join('')}`;
+    const text = bytes.toString('utf8');
+    assert.equal(text, expected);
+    assert.ok(!text.includes('1111') && !text.includes('2222') && !text.includes('3333'), '번호는 넣지 않아요');
+  });
+
+  it('엑셀이 한글을 알아보도록 UTF-8 BOM으로 시작하고, 줄 끝은 모두 CRLF예요', async () => {
+    const { bytes } = await download(FILE_PATH);
+    assert.deepEqual([...bytes.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
+    const text = bytes.toString('utf8');
+    assert.ok(text.endsWith('\r\n'));
+    assert.equal(text.split('\r\n').filter((line) => line.includes('\n')).length, 0, 'CR 없는 LF가 없어요');
+  });
+
+  it('= + - @로 시작하는 칸은 작은따옴표를 붙여 엑셀이 수식으로 읽지 않게 해요', async () => {
+    const { status, bytes } = await download(FILE_PATH);
+    assert.equal(status, 200);
+    const text = bytes.toString('utf8');
+    for (const name of ['=1+2', '+더하기', '-빼기', '@골뱅이']) assert.ok(text.includes(`,"'${name}",`), name);
+    assert.doesNotMatch(text, /(^|,)"[=+\-@\t\r]/m);
+  });
+
+  it('한글 파일 이름(출석기록-YYYY-MM.csv)과 CSV 형식으로 내려주고, 캐시하지 않아요', async () => {
+    const { headers } = await download(FILE_PATH);
+    assert.equal(headers.get('content-type'), 'text/csv; charset=utf-8');
+    const disposition = headers.get('content-disposition');
+    assert.match(disposition, /^attachment;/);
+    assert.ok(disposition.includes(`filename*=UTF-8''${encodeURIComponent('출석기록-2026-10.csv')}`), disposition);
+    assert.equal(headers.get('cache-control'), 'no-store');
+    assert.equal(headers.get('x-content-type-options'), 'nosniff');
+  });
+
+  it('기록이 없는 달은 머리글 한 줄만이에요', async () => {
+    assert.equal((await download('/api/records/csv?month=2026-09')).bytes.toString('utf8'), `${BOM}${HEADER}`);
+  });
+
+  it('달 형식이 틀리거나 없으면 400이에요', async () => {
+    assert.equal((await download('/api/records/csv?month=2026-13')).status, 400);
+    assert.equal((await download('/api/records/csv')).status, 400);
+  });
+
+  it('출석 기기, LAN 주소, localhost가 아닌 Host에서는 받을 수 없어요(403)', async () => {
+    const fromDevice = await api.kiosk(FILE_PATH, undefined, device);
+    assert.equal(fromDevice.status, 403);
+    assert.ok(!fromDevice.text.includes('나가람'));
+    assert.equal((await api.raw({ pathName: FILE_PATH, hostHeader: `evil.example:${server.port}` })).status, 403);
+    const ip = lanAddress();
+    if (ip) assert.equal((await request(server.port, { pathName: FILE_PATH, host: ip, hostHeader: `${ip}:${server.port}` })).status, 403);
   });
 });

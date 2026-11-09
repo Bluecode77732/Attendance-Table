@@ -13,7 +13,7 @@ import * as network from './network.ts';
 import type { Student, TeacherState } from './types.ts';
 
 export { planImport as previewImport } from './roster.ts';
-export { monthRecords, editRecords } from './records.ts';
+export { monthRecords, monthCsv, editRecords } from './records.ts';
 export { startPairing as openPairing, cancelPairing as closePairing, revokeDevice } from './devices.ts';
 export { nextAddress } from './network.ts';
 

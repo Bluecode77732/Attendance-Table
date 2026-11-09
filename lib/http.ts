@@ -132,7 +132,7 @@ async function serveStatic(req: IncomingMessage, res: ServerResponse, entry: Sta
 
 // 목적: 교사 전용 API를 처리합니다.
 // 이유: 교사 쓰기 동작은 전부 "교사 확인 → 동작 → 전체 상태 반환" 한 모양입니다. 동작 자체는 lib/teacher.ts가 맡습니다.
-// 방법: 교사 요청이 아니면 403. 조회는 GET(상태, 한 달 기록), 나머지는 POST로 경로에 맞는 teacher 함수를 부른 뒤 최신 teacherState를 돌려줍니다.
+// 방법: 교사 요청이 아니면 403. 조회는 GET(상태, 한 달 기록, 한 달 기록 파일), 나머지는 POST로 경로에 맞는 teacher 함수를 부른 뒤 최신 teacherState를 돌려줍니다. 기록 파일은 JSON이 아니라 내려받기(attachment)로 보내고, 한글 파일 이름은 filename*에 담습니다.
 async function handleTeacher(req: IncomingMessage, res: ServerResponse, url: URL, now: number): Promise<void> {
   if (!isTeacherRequest(req)) throw new HttpError(403, '교사 PC에서만 사용할 수 있습니다.');
   const pathname = url.pathname;
@@ -143,6 +143,19 @@ async function handleTeacher(req: IncomingMessage, res: ServerResponse, url: URL
   }
   if (req.method === 'GET' && pathname === '/api/records') {
     sendJson(res, 200, teacher.monthRecords(url.searchParams.get('month')));
+    return;
+  }
+  if (req.method === 'GET' && pathname === '/api/records/csv') {
+    const month = url.searchParams.get('month');
+    const body = Buffer.from(teacher.monthCsv(month), 'utf8');
+    res.writeHead(200, {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="records-${month}.csv"; filename*=UTF-8''${encodeURIComponent(`출석기록-${month}.csv`)}`,
+      'Content-Length': body.length,
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    res.end(body);
     return;
   }
   if (req.method !== 'POST') throw new HttpError(405, '허용되지 않는 요청입니다.');

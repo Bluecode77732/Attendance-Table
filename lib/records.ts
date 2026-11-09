@@ -2,7 +2,7 @@
 // 사용처: lib/teacher.ts(칸 누르기, 기록 화면)와 lib/checkin.ts(출석 기기)가 불러 씁니다.
 // 근거: 출석 기기와 현황판이 같은 기록 규칙을 써야 해서(DEC-11) server.js를 나누면서 한 파일로 모았습니다(DEC-14).
 
-import { REPEAT_WINDOW_MIN, MAX_VISITS_PER_DAY, DATE_RE, MONTH_RE, TIME_RE } from './config.ts';
+import { REPEAT_WINDOW_MIN, MAX_VISITS_PER_DAY, CSV_BOM, DATE_RE, MONTH_RE, TIME_RE } from './config.ts';
 import { invalid } from './errors.ts';
 import { getDb, persist, isPlainObject } from './store.ts';
 import { localDate, localTime, minutesOf } from './time.ts';
@@ -73,6 +73,32 @@ export function monthRecords(month: unknown): MonthRecords {
     classes: db.classes.map((c) => ({ id: c.id, name: c.name })),
     days,
   };
+}
+
+// 목적: CSV 한 칸에 넣을 값을 엑셀이 안전하게 읽는 모양으로 바꿉니다.
+// 이유: 이름이나 반 이름이 = + - @로 시작하면 엑셀이 수식으로 실행할 수 있고, 쉼표나 큰따옴표가 든 값은 칸을 깨뜨립니다.
+// 방법: 수식으로 읽힐 첫 글자(= + - @, 탭, CR) 앞에 작은따옴표를 붙입니다. 모든 칸을 큰따옴표로 감싸고, 안의 큰따옴표는 두 개로 씁니다.
+function csvCell(value: string): string {
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
+// 목적: 한 달치 기록을 엑셀에서 바로 열 수 있는 CSV 글로 만듭니다.
+// 이유: 원장이 기록을 엑셀로 열거나 구글 시트에 올려 쓰려고 합니다(DEC-19). 번호는 넣지 않습니다.
+// 방법: monthRecords로 그 달 기록을 받아 날짜 순, 명단 순, 방문 순으로 방문 하나를 한 줄(날짜, 이름, 반, 등원, 하원)로 씁니다. 반이 여럿이면 ", "로 잇습니다. 엑셀이 한글을 알아보도록 BOM으로 시작하고 줄 끝은 CRLF입니다.
+export function monthCsv(month: unknown): string {
+  const { students, classes, days } = monthRecords(month);
+  const classNames = new Map(classes.map((c) => [c.id, c.name]));
+  const rows = [['날짜', '이름', '반', '등원', '하원']];
+  for (const date of Object.keys(days).sort()) {
+    for (const student of students) {
+      const className = student.classIds.flatMap((id) => classNames.get(id) ?? []).join(', ');
+      for (const visit of days[date][student.id] ?? []) {
+        rows.push([date, student.name, className, visit.in, visit.out ?? '']);
+      }
+    }
+  }
+  return `${CSV_BOM}${rows.map((row) => `${row.map(csvCell).join(',')}\r\n`).join('')}`;
 }
 
 // 목적: 기록 화면에서 고친 하루치 방문 목록을 확인합니다.

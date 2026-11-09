@@ -1,4 +1,4 @@
-// 목적: 한 달 기록 화면의 동작입니다. 표 그리기, 칸 수정, 인쇄를 맡습니다.
+// 목적: 한 달 기록 화면의 동작입니다. 표 그리기, 칸 수정, 인쇄, 파일로 저장을 맡습니다.
 // 사용처: public/records.html이 common.js 다음에 부릅니다.
 // 근거: HTML 안 스크립트를 막는 보안 정책(CSP)을 켜려고 records.html에서 옮겼습니다(DEC-14).
 
@@ -238,6 +238,16 @@ async function saveEdit() {
   load();
 }
 
+// 목적: 보고 있는 달의 기록을 CSV 파일로 내려받습니다.
+// 이유: 원장이 기록을 엑셀로 열거나 구글 시트에 올려 씁니다(DEC-19).
+// 방법: 서버가 만든 /api/records/csv?month= 를 download 속성이 있는 링크로 엽니다. 화면을 옮기지 않으므로 닫힘 알림(pagehide)이 나가지 않습니다. 반 선택과 관계없이 그 달 전체가 들어갑니다.
+function saveFile() {
+  const link = document.createElement('a');
+  link.href = `/api/records/csv?month=${month}`;
+  link.download = `출석기록-${month}.csv`;
+  link.click();
+}
+
 document.getElementById('prev').addEventListener('click', () => shiftMonth(-1));
 document.getElementById('next').addEventListener('click', () => shiftMonth(1));
 classFilterEl.addEventListener('change', () => {
@@ -246,6 +256,7 @@ classFilterEl.addEventListener('change', () => {
 });
 document.getElementById('refresh').addEventListener('click', refresh);
 document.getElementById('print').addEventListener('click', () => window.print());
+document.getElementById('save-file').addEventListener('click', saveFile);
 wrap.addEventListener('click', (event) => {
   const cell = event.target.closest('td.day');
   if (cell) openEdit(cell.dataset.date, Number(cell.dataset.id));

@@ -431,6 +431,31 @@ describe('화면', { skip: BROWSER ? false : 'Chrome이나 Edge가 없어요' },
     }
   });
 
+  it('기록 화면의 "파일로 저장"은 화면을 떠나지 않고 보고 있는 달의 CSV를 내려받아요', async () => {
+    const month = (await api.teacher('/api/state')).json.today.slice(0, 7);
+    const downloadDir = makeTempDir();
+    const rec = await openTab(browser.port, `http://localhost:${server.port}/records`, { width: 1600, height: 900, mobile: false }, errors);
+    try {
+      const set = await rec.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: downloadDir });
+      if (set.error) await rec.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: downloadDir });
+      // 페이지가 닫힘 알림(pagehide)을 보내면 DEC-16에 따라 출석부가 꺼질 수 있어, 그런 일이 없는지 함께 봅니다.
+      await rec.evaluate(`addEventListener('pagehide', () => { window.__pageHidden = true; })`);
+      const box = await rec.evaluate(`(() => { const r = document.getElementById('save-file').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+      for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await rec.send('Input.dispatchMouseEvent', { type, x: box.x, y: box.y, button: 'left', clickCount: 1 });
+      const file = path.join(downloadDir, `출석기록-${month}.csv`);
+      for (let i = 0; i < 25 && !fs.existsSync(file); i++) await wait(200);
+      assert.ok(fs.existsSync(file), `내려받은 파일: ${fs.readdirSync(downloadDir).join(', ')}`);
+      const bytes = fs.readFileSync(file);
+      assert.deepEqual([...bytes.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
+      assert.ok(bytes.toString('utf8').startsWith(String.fromCodePoint(0xfeff) + '"날짜","이름","반","등원","하원"\r\n'));
+      assert.equal(await rec.evaluate(`location.pathname`), '/records');
+      assert.equal(await rec.evaluate(`window.__pageHidden === true`), false, '화면을 떠나지 않아요');
+    } finally {
+      rec.close();
+      removeDir(downloadDir);
+    }
+  });
+
   it('출석 기기를 가로로 눕혀도 번호 입력과 이름 고르기가 잘리지 않아요', async () => {
     // 목적: 지금 보이는 화면의 맨 위와 맨 아래가 화면 안에 있는지 잽니다.
     // 이유: 가로에서는 높이가 모자라 가운데 정렬된 화면의 위쪽이 잘렸습니다.
