@@ -180,6 +180,61 @@ describe('저장', () => {
     assert.deepEqual(savedNames(), ['가나다', '라마바', '사아자'], '앞서 못 쓴 변경도 함께 저장돼요');
   }));
 
+  it('켜져 있는 동안 밖에서 바꿔 넣은 data.json은 덮어쓰기 전에 replaced로 남겨요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    const replaced = () => fs.readdirSync(dir).filter((n) => n.startsWith('data.json.replaced-'));
+    const outside = (name) => JSON.stringify({ version: 3, academyName: '', classes: [], nextClassId: 1, students: [{ id: 1, name, phone: null, classIds: [], leftOn: null }], nextId: 2, devices: [], nextDeviceId: 1, records: {} });
+    const server = await start({ dataFile });
+    const api = clients(server.port);
+
+    // 빈 채로 켠 뒤 data.json을 넣은 경우(업데이트 방법 라)
+    fs.writeFileSync(dataFile, outside('옮긴학생'));
+    await api.teacher('/api/add', {});
+    await settle();
+    assert.equal(replaced().length, 1, '없던 파일이 생겼으면 남겨요');
+    assert.match(fs.readFileSync(path.join(dir, replaced()[0]), 'utf8'), /옮긴학생/);
+    assert.match(server.log(), /data\.json\.replaced-/);
+
+    // 출석부가 스스로 쓴 파일은 남기지 않아요
+    await api.teacher('/api/add', {});
+    await api.teacher('/api/add', {});
+    await settle();
+    assert.equal(replaced().length, 1, '자기가 쓴 파일은 그대로 덮어써요');
+
+    // 출석부가 쓴 뒤 밖에서 바꾼 경우
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    fs.writeFileSync(dataFile, outside('바꾼학생'));
+    await api.teacher('/api/add', {});
+    await settle();
+    const kept = replaced().map((n) => fs.readFileSync(path.join(dir, n), 'utf8'));
+    assert.equal(kept.length, 2);
+    assert.ok(kept.some((t) => t.includes('바꾼학생')));
+    assert.equal(JSON.parse(fs.readFileSync(dataFile, 'utf8')).students.length, 4, '메모리의 명단으로 저장해요');
+  }));
+
+  it('예전 형식을 바꿀 때는 그날 백업이 이미 있어도 원래 파일을 따로 남겨요', () => withSandbox(async (dir, start) => {
+    const dataFile = path.join(dir, 'data.json');
+    const backupDir = path.join(dir, 'backup');
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    fs.mkdirSync(backupDir, { recursive: true });
+    fs.writeFileSync(path.join(backupDir, `data-${today}.json`), '{"version":2,"morning":true}');
+    fs.writeFileSync(dataFile, JSON.stringify({
+      version: 2, classes: [], nextClassId: 1,
+      students: [{ id: 1, name: '가나다', phone: null, classIds: [], leftOn: null }], nextId: 2,
+      devices: [], nextDeviceId: 1, records: { '2026-10-01': { 1: [{ in: '15:00', out: null }] } },
+    }));
+    const server = await start({ dataFile });
+    await settle();
+    const kept = fs.readdirSync(backupDir).filter((n) => /^data-before-upgrade-\d+\.json$/.test(n));
+    assert.equal(kept.length, 1, fs.readdirSync(backupDir).join(', '));
+    const original = JSON.parse(fs.readFileSync(path.join(backupDir, kept[0]), 'utf8'));
+    assert.equal(original.version, 2);
+    assert.deepEqual(original.records, { '2026-10-01': { 1: [{ in: '15:00', out: null }] } });
+    assert.equal(fs.readFileSync(path.join(backupDir, `data-${today}.json`), 'utf8'), '{"version":2,"morning":true}', '그날 백업은 그대로예요');
+    assert.match(server.log(), new RegExp(kept[0].replace(/\./g, '\\.')));
+  }));
+
   it('자정이 지나면 모두 미등원이 되고, 새날 첫 입력은 등원이며 백업이 생겨요', () => withSandbox(async (dir, start) => {
     const dataFile = path.join(dir, 'data.json');
     const clockFile = path.join(dir, 'clock.txt');

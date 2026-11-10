@@ -14,6 +14,7 @@ let rev = Date.now(); // 변경 때마다 +1. 재시작해도 줄어들지 않�
 let writeQueue: Promise<void> = Promise.resolve();
 let backupDay: string | null = null; // 오늘 백업을 이미 했는지. 재시작하면 파일 이름으로 다시 확인합니다
 let saveErrorTime: string | null = null; // 마지막 저장이 실패했으면 처음 실패한 시각(HH:MM). 저장이 다시 성공하면 비웁니다
+let fileMark: string | null = null; // 출석부가 마지막으로 읽거나 쓴 data.json의 크기와 수정 시각. null이면 파일이 없었습니다
 
 // 목적: 저장된 데이터를 읽어 옵니다. 없으면 빈 명단, 예전 형식이면 새 형식으로 바꾸고, 깨졌으면 파일을 보존한 채 빈 명단으로 시작합니다.
 // 이유: 첫 실행이나 파일 손상에도 서버는 떠야 하고, 손상된 기록을 조용히 덮어써서 잃으면 안 됩니다(DEC-06, DEC-11).
@@ -160,16 +161,53 @@ function hasUniqueIds(list: unknown[], nextId: unknown, check: (item: Record<str
   return true;
 }
 
-// 목적: 서버를 시작할 때 data.json을 한 번 읽어 메모리에 올립니다. 예전 형식이면 바꿔서 한 번 저장합니다.
-// 이유: 데이터는 시작할 때 한 번만 읽고, 실행 중에는 메모리의 데이터가 기준입니다(DEC-06). 파일을 불러오기만 해서는 읽지 않아야 시험에서 따로 쓸 수 있습니다.
-// 방법: loadDb 결과를 db에 두고, 업그레이드했으면 안내를 남기고 persist합니다.
+// 목적: 서버를 시작할 때 data.json을 한 번 읽어 메모리에 올립니다. 예전 형식이면 원래 파일을 백업 폴더에 따로 남기고, 바꿔서 한 번 저장합니다.
+// 이유: 데이터는 시작할 때 한 번만 읽고, 실행 중에는 메모리의 데이터가 기준입니다(DEC-06). 그날 백업이 이미 있으면 매일 백업은 업그레이드 직전 파일을 남기지 못합니다(ROADMAP §3). 파일을 불러오기만 해서는 읽지 않아야 시험에서 따로 쓸 수 있습니다.
+// 방법: loadDb 결과를 db에 두고 지금 파일의 표시(markOf)를 기억합니다. 업그레이드했으면 원래 파일을 backup/data-before-upgrade-<시각>.json으로 복사한 뒤 persist합니다. 이 이름은 BACKUP_NAME_RE에 맞지 않아 30개 정리에서 지워지지 않습니다. 시작 전이라 동기 fs를 씁니다.
 export function openStore(): void {
   const loaded = loadDb();
   db = loaded.data;
+  fileMark = markOf(fs.statSync(DATA_FILE, { throwIfNoEntry: false }));
   if (loaded.upgraded) {
-    console.log('예전 형식의 데이터 파일을 새 형식으로 바꿨어요. 원래 파일은 backup 폴더에 남겨요.');
+    const kept = path.join(BACKUP_DIR, `data-before-upgrade-${Date.now()}.json`);
+    try {
+      fs.mkdirSync(BACKUP_DIR, { recursive: true });
+      fs.copyFileSync(DATA_FILE, kept, fs.constants.COPYFILE_EXCL);
+      console.log(`예전 형식의 데이터 파일을 새 형식으로 바꿨어요. 원래 파일은 backup 폴더에 ${path.basename(kept)}로 남겨요.`);
+    } catch (e) {
+      console.warn('예전 형식의 데이터 파일을 새 형식으로 바꿨지만, 원래 파일을 backup 폴더에 남기지 못했습니다.', (e as Error).message);
+    }
     persist();
   }
+}
+
+// 목적: data.json의 크기와 수정 시각을 한 문자열로 돌려줍니다. 파일이 없으면 null입니다.
+// 이유: 저장 직전에 파일이 출석부가 마지막으로 본 것과 같은지 비교해야 합니다.
+// 방법: stat 결과로 "크기:수정 시각"을 만듭니다.
+function markOf(stats: fs.Stats | undefined): string | null {
+  return stats === undefined ? null : `${stats.size}:${stats.mtimeMs}`;
+}
+
+// 목적: data.json의 stat을 비동기로 읽습니다. 파일이 없으면 undefined입니다.
+// 이유: 저장 큐는 요청 경로라 동기 fs를 쓸 수 없고, fsp.stat에는 throwIfNoEntry가 없습니다.
+// 방법: ENOENT만 undefined로 바꾸고 다른 오류는 그대로 던집니다.
+async function statData(): Promise<fs.Stats | undefined> {
+  try {
+    return await fsp.stat(DATA_FILE);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+    throw e;
+  }
+}
+
+// 목적: 출석부가 켜진 동안 밖에서 바꿔 넣은 data.json을 덮어쓰기 전에 data.json.replaced-<시각>으로 남깁니다.
+// 이유: 실행 중에는 메모리의 데이터가 기준이라, 켜 둔 채 옮겨 넣은 파일은 다음 저장 때 지워지고 백업도 남지 않았습니다(ROADMAP §3).
+// 방법: 지금 파일의 표시가 fileMark와 같으면 그대로 둡니다. 다르면 복사본을 만들고 콘솔에 알립니다. 복사가 실패하면 던져서 이번 저장을 멈춥니다. 바뀐 파일을 지우느니 저장 실패 안내가 뜨는 편이 낫습니다.
+async function keepReplacedFile(): Promise<void> {
+  if (markOf(await statData()) === fileMark) return;
+  const kept = `${DATA_FILE}.replaced-${Date.now()}`;
+  await fsp.copyFile(DATA_FILE, kept, fs.constants.COPYFILE_EXCL);
+  console.warn(`출석부가 켜진 동안 data.json이 바뀌었습니다. 바뀐 파일은 ${path.basename(kept)}로 남기고, 화면의 명단으로 저장합니다.`);
 }
 
 // 목적: 지금 메모리에 있는 데이터를 돌려줍니다.
@@ -188,7 +226,7 @@ export function getRev(): number {
 
 // 목적: 현재 데이터를 디스크에 저장합니다. 그날 첫 저장이면 저장 전에 백업부터 합니다.
 // 이유: 서버를 껐다 켜도 출석이 남아야 하고, 쓰는 도중 꺼져도 파일이 깨지면 안 됩니다. 하루가 시작될 때의 파일을 남겨 두면 그날 실수를 되돌릴 수 있습니다(DEC-11). 응답은 저장 전에 나가므로, 실패하면 교사가 현황판에서 알 수 있게 실패 시각을 남깁니다(ROADMAP §3).
-// 방법: 지금 시점의 스냅샷을 만들어 순서대로 임시 파일에 쓴 뒤 rename으로 교체합니다(비동기 큐). 백업은 같은 큐 안에서 쓰기 직전에 합니다. 실패하면 처음 실패한 시각을 saveErrorTime에 두고, 다음 쓰기가 성공하면 비웁니다. 스냅샷은 db 전체라 그 성공이 앞서 못 쓴 변경까지 담습니다.
+// 방법: 지금 시점의 스냅샷을 만들어 순서대로 임시 파일에 쓴 뒤 rename으로 교체합니다(비동기 큐). 백업은 같은 큐 안에서 쓰기 직전에 하고, 그다음 밖에서 바뀐 data.json이 있으면 replaced로 남깁니다(keepReplacedFile). 쓴 뒤에는 파일의 표시를 기억합니다. 실패하면 처음 실패한 시각을 saveErrorTime에 두고, 다음 쓰기가 성공하면 비웁니다. 스냅샷은 db 전체라 그 성공이 앞서 못 쓴 변경까지 담습니다.
 export function persist(): void {
   rev += 1;
   const snapshot = JSON.stringify(db);
@@ -200,8 +238,10 @@ export function persist(): void {
         await backupDaily(today);
         backupDay = today;
       }
+      await keepReplacedFile();
       await fsp.writeFile(tmp, snapshot, 'utf8');
       await fsp.rename(tmp, DATA_FILE);
+      fileMark = markOf(await statData());
       saveErrorTime = null;
     })
     .catch((e: Error) => {
