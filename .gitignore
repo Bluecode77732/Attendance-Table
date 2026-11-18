@@ -13,3 +13,7 @@ node_modules/
 
 # 개발자 PC의 VS Code 작업 영역 설정입니다. 다른 프로젝트 폴더 경로가 들어 있어 저장소에 올리지 않습니다
 *.code-workspace
+
+# 개발자용 프로젝트 문서와 모든 md 문서입니다. GitHub에 올리지 않습니다
+docs/
+*.md
