@@ -17,3 +17,4 @@ node_modules/
 # 개발자용 프로젝트 문서와 모든 md 문서입니다. GitHub에 올리지 않습니다
 docs/
 *.md
+!README.md
